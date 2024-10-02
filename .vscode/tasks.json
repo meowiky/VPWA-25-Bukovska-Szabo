@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "npm",
+            "script": "dev",
+            "path": "slaggFE",
+            "problemMatcher": [],
+            "label": "npm: dev - slaggFE",
+            "detail": "quasar dev",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "type": "npm",
+            "script": "build",
+            "path": "slaggFE",
+            "group": "build",
+            "problemMatcher": [],
+            "label": "npm: build - slaggFE",
+            "detail": "quasar build"
+        },
+        {
+            "type": "npm",
+            "script": "install",
+            "path": "slaggFE",
+            "group": "build",
+            "problemMatcher": [],
+            "label": "npm: install - slaggFE",
+            "detail": "install dependencies from package"
+        }
+    ]
+}
