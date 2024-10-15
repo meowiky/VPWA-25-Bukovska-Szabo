@@ -1,106 +1,156 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="hHh lpR fFf">
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title>
-          Quasar App
+          <q-avatar>
+            <img src="https://i.imgur.com/u7bezXG.png">
+          </q-avatar>
+          Slagg
         </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
+        <q-item-label header>Channels</q-item-label>
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item clickable v-for="channel in userChannels" :key="channel.name">
+          <q-item-section>
+            <q-item-label>{{ channel.name }}</q-item-label>
+            <q-item-label caption>
+              {{ channel.isPrivate ? 'Private' : 'Public' }}
+            </q-item-label>
+          </q-item-section>
+          <q-item-section side>
+            <q-btn dense flat icon="exit_to_app" @click="leaveChannel(channel.name)" />
+
+            <q-btn
+              dense
+              flat
+              v-if="channel.admin === currentUser.nickName"
+              icon="delete"
+              color="negative"
+              @click="deleteChannel(channel.name)"
+            />
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="openCreateChannelDialog">
+          <q-item-section avatar>
+            <q-icon name="add" />
+          </q-item-section>
+          <q-item-section>Create New Channel</q-item-section>
+        </q-item>
       </q-list>
+    </q-drawer>
+
+    <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered>
     </q-drawer>
 
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <q-dialog v-model="createChannelDialog">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Create New Channel</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="newChannelName" label="Channel Name" />
+          <q-toggle v-model="isPrivate" label="Private Channel" />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="createChannelDialog = false" />
+          <q-btn flat label="Create" color="primary" @click="createChannel" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
-import EssentialLink, { EssentialLinkProps } from 'components/EssentialLink.vue';
+<script>
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
 
-defineOptions({
-  name: 'MainLayout'
-});
+export default {
+  setup() {
+    const store = useStore();
+    const leftDrawerOpen = ref(false);
+    const rightDrawerOpen = ref(false);
+    const createChannelDialog = ref(false);
+    const newChannelName = ref('');
+    const isPrivate = ref(false);
 
-const linksList: EssentialLinkProps[] = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
+    const currentUser = computed(() => store.state.user);
+    const userChannels = computed(() => store.state.channels.channels);
+
+    const toggleLeftDrawer = () => {
+      leftDrawerOpen.value = !leftDrawerOpen.value;
+    };
+
+    const toggleRightDrawer = () => {
+      rightDrawerOpen.value = !rightDrawerOpen.value;
+    };
+
+    const openCreateChannelDialog = () => {
+      createChannelDialog.value = true;
+    };
+
+    const createChannel = () => {
+      console.log('Creating channel:', newChannelName.value, isPrivate.value);
+      store.dispatch('channels/createChannel', {
+        channelName: newChannelName.value,
+        isPrivate: isPrivate.value,
+        admin: currentUser.value.nickName
+      });
+      createChannelDialog.value = false;
+      newChannelName.value = '';
+      isPrivate.value = false;
+    };
+
+    const leaveChannel = (channelName) => {
+      store.dispatch('channels/leaveChannel', {
+        channelName,
+        memberNick: currentUser.value.nickName
+      });
+    };
+
+    const deleteChannel = (channelName) => {
+      store.dispatch('channels/deleteChannel', channelName);
+    };
+
+    const logout = () => {
+      store.dispatch('user/logout');
+      this.$router.push('/login');
+    };
+
+    return {
+      leftDrawerOpen,
+      rightDrawerOpen,
+      toggleLeftDrawer,
+      toggleRightDrawer,
+      currentUser,
+      userChannels,
+      createChannelDialog,
+      newChannelName,
+      isPrivate,
+      openCreateChannelDialog,
+      createChannel,
+      leaveChannel,
+      deleteChannel,
+      logout
+    };
   }
-];
-
-const leftDrawerOpen = ref(false);
-
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
+};
 </script>
+
+<style scoped>
+</style>
