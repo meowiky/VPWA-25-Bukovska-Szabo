@@ -114,19 +114,19 @@ export default {
       leftDrawerOpen: false,
       rightDrawerOpen: false,
       newChannelName: '',
-      isPrivate: false,
-      selectedChannel: null,
+      isPrivate: false
     };
   },
 
   computed: {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
+      selectedChannel: 'getSelectedChannel',
     }),
   },
 
   methods: {
-    ...mapMutations('all', ['createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
+    ...mapMutations('all', ['setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
 
     createChannel() {
       let payload = {
@@ -158,7 +158,7 @@ export default {
     },
 
     selectChannel(channel) {
-      this.selectedChannel = channel;
+      this.setSelectedChannel(channel);
     },
 
     kickMember(member) {

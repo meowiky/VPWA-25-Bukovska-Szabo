@@ -5,6 +5,10 @@ import * as dbConn from './db_conn';
 
 
 const mutation: MutationTree<AllStateInterface> = {
+  setSelectedChannel(state, payload: ChannelStateInterface) {
+    state.selectedChannel = payload;
+  },
+
   createNewChannel(state, payload: {name: string, isPrivate: boolean}){
     const newChannel: ChannelStateInterface = {
       name: payload.name,
