@@ -22,7 +22,7 @@ export interface ChannelStateInterface {
 export interface UserStateInterface {
   user: MemberStateInterface;
   email: string;
-  password?: string;
+  password: string;
   isLoggedIn: boolean;
   channels: ChannelStateInterface[];
 }
@@ -41,6 +41,7 @@ function state(): AllStateInterface {
         status: 'online'
       },
       email: '',
+      password: '',
       isLoggedIn: false,
       channels: []
     },
