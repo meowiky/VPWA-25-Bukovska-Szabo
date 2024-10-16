@@ -19,43 +19,47 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
+import {mapGetters, mapMutations} from 'vuex';
 
 export default defineComponent({
   name: 'LoginForm',
-  setup() {
-    const formData = ref({
-      email: '',
-      password: ''
-    });
-    const errorMessage = ref('');
 
-    const onSubmit = async () => {
-      errorMessage.value = '';
+  data() {
+    return {
+      formData: {
+        email: '',
+        password: ''
+      },
+      errorMessage: ''
+    };
+  },
 
-      if (!formData.value.email || !formData.value.password) {
-        errorMessage.value = 'Please fill in all fields';
+  computed: {
+    ...mapGetters('all', {
+      isUserLoggedIn: 'isUserLoggedIn'
+    }),
+  },
+
+  methods: {
+    ...mapMutations('all', ['toggleIsUserLoggedIn']),
+    async onSubmit() {
+      this.errorMessage = '';
+
+      if (!this.formData.email || !this.formData.password) {
+        this.errorMessage = 'Please fill in all fields';
         return;
       }
 
       try {
-        // TODO:: Populate loggedUser
-
-
-
-        // const response = await axios.post('/api/login', formData.value);
-        // console.log('Login successful:', response.data);
+        // TODO: Populate loggedUser based on API or other logic
+        this.toggleIsUserLoggedIn();
+        this.$router.push('/chat');
       } catch (error) {
         console.error('Login error:', error);
-        errorMessage.value = 'Login failed. Please try again.';
+        this.errorMessage = 'Login failed. Please try again.';
       }
-    };
-
-    return {
-      formData,
-      errorMessage,
-      onSubmit
-    };
+    }
   }
 });
 </script>

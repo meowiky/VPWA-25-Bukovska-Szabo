@@ -5,6 +5,10 @@ import * as dbConn from './db_conn';
 
 
 const mutation: MutationTree<AllStateInterface> = {
+  toggleIsUserLoggedIn(state) {
+    state.isUserLoggedIn = !state.isUserLoggedIn;
+  },
+
   setSelectedChannel(state, payload: ChannelStateInterface) {
     state.selectedChannel = payload;
   },

@@ -28,12 +28,14 @@ export interface UserStateInterface {
 }
 
 export interface AllStateInterface {
+  isUserLoggedIn: boolean;
   loggedUser: UserStateInterface;
   selectedChannel: ChannelStateInterface;
 }
 
 function state(): AllStateInterface {
   return {
+    isUserLoggedIn: false,
     loggedUser: {
       user: {
         firstName: '',
