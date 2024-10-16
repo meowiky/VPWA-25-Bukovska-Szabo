@@ -64,6 +64,7 @@ export const message_db = {
   ],
 }
 
+// TODO:: Remove redundant table
 export const msg_ch_db = {
   'messagesChannel': [
     {
