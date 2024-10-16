@@ -2,7 +2,6 @@
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
 
         <q-toolbar-title>
           <q-avatar>
@@ -65,7 +64,7 @@
               </q-item-label>
             </q-item-section>
 
-            <q-item-section side v-if=" member !== selectedChannel.admin" >
+            <q-item-section side v-if="member !== selectedChannel.admin">
               <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
   <!--            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />-->
   <!--            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>-->
@@ -74,7 +73,7 @@
         </template>
         <q-item v-else>
           <q-item-section>
-            <q-item-label>You didnt select a channel</q-item-label>
+            <q-item-label>You didn't select a channel</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
@@ -111,7 +110,7 @@ export default {
   data() {
     return {
       createChannelDialog: false,
-      leftDrawerOpen: false,
+      leftDrawerOpen: true,
       rightDrawerOpen: false,
       newChannelName: '',
       isPrivate: false
@@ -143,10 +142,6 @@ export default {
 
     deleteChannelAction(channel) {
       this.deleteChannel(channel);
-    },
-
-    toggleLeftDrawer() {
-      this.leftDrawerOpen = !this.leftDrawerOpen;
     },
 
     toggleRightDrawer() {
