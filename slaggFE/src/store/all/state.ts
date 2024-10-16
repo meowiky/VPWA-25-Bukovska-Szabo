@@ -1,7 +1,7 @@
 export interface MessageStateInterface {
   content: string;
   timestamp: Date;
-  userNickName: string;
+  user: MemberStateInterface;
 }
 
 export interface MemberStateInterface {
@@ -29,6 +29,7 @@ export interface UserStateInterface {
 
 export interface AllStateInterface {
   loggedUser: UserStateInterface;
+  selectedChannel: ChannelStateInterface;
 }
 
 function state(): AllStateInterface {
@@ -45,6 +46,18 @@ function state(): AllStateInterface {
       isLoggedIn: false,
       channels: []
     },
+    selectedChannel: {
+      name: '',
+      isPrivate: false,
+      admin: {
+        firstName: '',
+        lastName: '',
+        nickName: '',
+        status: 'offline'
+      },
+      members: [],
+      messages: []
+    }
   };
 }
 

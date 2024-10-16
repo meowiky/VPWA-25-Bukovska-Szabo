@@ -6,6 +6,9 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   getLoggedUser (state) {
     return state.loggedUser
   },
+  getSelectedChannel (state) {
+    return state.selectedChannel
+  }
 };
 
 export default getters;

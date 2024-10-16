@@ -1,4 +1,4 @@
-import {ChannelStateInterface, MemberStateInterface, UserStateInterface} from './state';
+import {ChannelStateInterface, MemberStateInterface, MessageStateInterface, UserStateInterface} from './state';
 import * as db from 'src/store/all/db';
 
 window.db = function () { return db };
@@ -72,4 +72,8 @@ export function addUserToChannel(user: MemberStateInterface, channel: ChannelSta
         memberId: db.users_db.users.filter(u => u.nickName === user.nickName)[0].id,
         channelId: db.channel_db.channel.filter(c => c.name === channel.name)[0].id
     })
+}
+
+export function saveMessage(message: MessageStateInterface, channel: ChannelStateInterface) {
+  return [message, channel]
 }

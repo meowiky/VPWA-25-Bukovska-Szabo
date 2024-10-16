@@ -2,8 +2,6 @@
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-
         <q-toolbar-title>
           <q-avatar>
             <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
@@ -20,10 +18,12 @@
       <q-list>
         <q-item-label header>Channels</q-item-label>
 
-        <q-item clickable
-                v-for="channel in loggedUser.channels"
-                :key="channel.name"
-                @click="selectChannel(channel)">
+        <q-item
+          clickable
+          v-for="channel in loggedUser.channels"
+          :key="channel.name"
+          @click="selectChannel(channel)"
+          :class="{ 'selected-channel': channel === selectedChannel }">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -32,7 +32,6 @@
           </q-item-section>
           <q-item-section side>
             <q-btn dense flat icon="exit_to_app" @click="leaveChannelAction(channel)" />
-
             <q-btn
               dense
               flat
@@ -65,7 +64,7 @@
               </q-item-label>
             </q-item-section>
 
-            <q-item-section side v-if=" member !== selectedChannel.admin" >
+            <q-item-section side v-if="member !== selectedChannel.admin">
               <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
   <!--            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />-->
   <!--            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>-->
@@ -74,7 +73,7 @@
         </template>
         <q-item v-else>
           <q-item-section>
-            <q-item-label>You didnt select a channel</q-item-label>
+            <q-item-label>You didn't select a channel</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
@@ -111,22 +110,22 @@ export default {
   data() {
     return {
       createChannelDialog: false,
-      leftDrawerOpen: false,
+      leftDrawerOpen: true,
       rightDrawerOpen: false,
       newChannelName: '',
-      isPrivate: false,
-      selectedChannel: null,
+      isPrivate: false
     };
   },
 
   computed: {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
+      selectedChannel: 'getSelectedChannel',
     }),
   },
 
   methods: {
-    ...mapMutations('all', ['createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
+    ...mapMutations('all', ['setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
 
     createChannel() {
       let payload = {
@@ -145,10 +144,6 @@ export default {
       this.deleteChannel(channel);
     },
 
-    toggleLeftDrawer() {
-      this.leftDrawerOpen = !this.leftDrawerOpen;
-    },
-
     toggleRightDrawer() {
       this.rightDrawerOpen = !this.rightDrawerOpen;
     },
@@ -158,7 +153,7 @@ export default {
     },
 
     selectChannel(channel) {
-      this.selectedChannel = channel;
+      this.setSelectedChannel(channel);
     },
 
     kickMember(member) {
@@ -173,4 +168,8 @@ export default {
 </script>
 
 <style scoped>
+.selected-channel {
+  background-color: #E0F7FA;
+  border-left: 4px solid #00ACC1;
+}
 </style>
