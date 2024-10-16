@@ -2,7 +2,6 @@
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-
         <q-toolbar-title>
           <q-avatar>
             <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
@@ -19,10 +18,12 @@
       <q-list>
         <q-item-label header>Channels</q-item-label>
 
-        <q-item clickable
-                v-for="channel in loggedUser.channels"
-                :key="channel.name"
-                @click="selectChannel(channel)">
+        <q-item
+          clickable
+          v-for="channel in loggedUser.channels"
+          :key="channel.name"
+          @click="selectChannel(channel)"
+          :class="{ 'selected-channel': channel === selectedChannel }">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -31,7 +32,6 @@
           </q-item-section>
           <q-item-section side>
             <q-btn dense flat icon="exit_to_app" @click="leaveChannelAction(channel)" />
-
             <q-btn
               dense
               flat
@@ -168,4 +168,8 @@ export default {
 </script>
 
 <style scoped>
+.selected-channel {
+  background-color: #E0F7FA;
+  border-left: 4px solid #00ACC1;
+}
 </style>
