@@ -6,9 +6,7 @@ import {
   Store as VuexStore,
   useStore as vuexUseStore,
 } from 'vuex'
-import userModule, { UserState } from './modules/user';
-import channelsModule, { ChannelsState } from './modules/channel';
-import messagesModule, { MessagesState } from './modules/message';
+import all from './all'
 
 
 // import example from './module-example'
@@ -48,18 +46,10 @@ declare module 'vuex' {
   }
 }
 
-export interface StateInterface {
-  user: UserState;
-  channels: ChannelsState;
-  messages: MessagesState;
-}
-
 export default store(function (/* { ssrContext } */) {
   const Store = createStore<StateInterface>({
     modules: {
-      user: userModule,
-      channels: channelsModule,
-      messages: messagesModule,
+      all
     },
 
     // enable strict mode (adds overhead!)
