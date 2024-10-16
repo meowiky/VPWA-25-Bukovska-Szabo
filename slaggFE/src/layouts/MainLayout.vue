@@ -11,6 +11,7 @@
           Slagg
         </q-toolbar-title>
 
+        <q-btn dense flat round icon="logout" @click="toggleRightDrawer" />
         <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
     </q-header>
@@ -50,6 +51,27 @@
     </q-drawer>
 
     <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered>
+      <q-list>
+        <q-item-label header>Channel Members</q-item-label>
+
+        <q-item v-for="member in currentChannelMembers" :key="member.nickName">
+          <q-item-section>
+            <q-item-label>{{ member.nickName }}</q-item-label>
+            <q-item-label caption>
+              {{ member.nickName === currentChannelAdmin ? 'Admin' : 'Member' }}
+            </q-item-label>
+          </q-item-section>
+
+          <!-- Admin-specific functionality for kicking members -->
+          <q-item-section side v-if="member.nickName !== currentChannelAdmin">
+            <!-- If current user is admin, allow direct kick -->
+            <q-btn dense flat icon="delete" color="negative" v-if="isAdmin" @click="kickMember(member.nickName)" />
+            <!-- Regular members can request to kick another member -->
+            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />
+            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>
+          </q-item-section>
+        </q-item>
+      </q-list>
     </q-drawer>
 
     <q-page-container>
@@ -92,6 +114,12 @@ export default {
     const currentUser = computed(() => store.state.user);
     const userChannels = computed(() => store.state.channels.channels);
 
+    const currentChannelMembers = computed(() => store.state.channels.currentChannelMembers);
+    const currentChannelAdmin = computed(() => store.state.channels.currentChannelAdmin);
+    const isAdmin = computed(() => currentUser.value.nickName === currentChannelAdmin.value);
+
+    const kickRequests = ref({});
+
     const toggleLeftDrawer = () => {
       leftDrawerOpen.value = !leftDrawerOpen.value;
     };
@@ -127,6 +155,25 @@ export default {
       store.dispatch('channels/deleteChannel', channelName);
     };
 
+    const kickMember = (memberNick) => {
+      store.dispatch('channels/kickMember', { channelName: currentChannel.value, memberNick });
+    };
+
+    const requestKick = (memberNick) => {
+      if (!kickRequests.value[memberNick]) {
+        kickRequests.value[memberNick] = [];
+      }
+
+      if (!kickRequests.value[memberNick].includes(currentUser.value.nickName)) {
+        kickRequests.value[memberNick].push(currentUser.value.nickName);
+
+        if (kickRequests.value[memberNick].length >= 3) {
+          kickMember(memberNick);
+          delete kickRequests.value[memberNick];
+        }
+      }
+    };
+
     const logout = () => {
       store.dispatch('user/logout');
       this.$router.push('/login');
@@ -139,6 +186,10 @@ export default {
       toggleRightDrawer,
       currentUser,
       userChannels,
+      currentChannelMembers,
+      currentChannelAdmin,
+      isAdmin,
+      kickRequests,
       createChannelDialog,
       newChannelName,
       isPrivate,
@@ -146,6 +197,8 @@ export default {
       createChannel,
       leaveChannel,
       deleteChannel,
+      kickMember,
+      requestKick,
       logout
     };
   }
