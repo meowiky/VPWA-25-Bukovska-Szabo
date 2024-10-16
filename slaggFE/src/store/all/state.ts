@@ -1,7 +1,7 @@
 export interface MessageStateInterface {
   content: string;
   timestamp: Date;
-  userNickName: string;
+  user: MemberStateInterface;
 }
 
 export interface MemberStateInterface {

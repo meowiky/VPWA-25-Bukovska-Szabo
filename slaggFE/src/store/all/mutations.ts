@@ -1,5 +1,5 @@
 import { MutationTree } from 'vuex';
-import {AllStateInterface, MemberStateInterface} from './state';
+import {AllStateInterface, MemberStateInterface, MessageStateInterface} from './state';
 import { ChannelStateInterface } from './state';
 import * as dbConn from './db_conn';
 
@@ -50,6 +50,19 @@ const mutation: MutationTree<AllStateInterface> = {
       if (channel){
         channel.members = channel.members.filter((member) => member !== payload.member);
       }
+    }
+  },
+
+  sendNewMessage(state, payload: {content: string, timestamp: Date, channel: ChannelStateInterface}){
+    const newMessage: MessageStateInterface = {
+      content: payload.content,
+      timestamp: payload.timestamp,
+      user: state.loggedUser.user
+    }
+    dbConn.saveMessage(newMessage, payload.channel);
+    const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
+    if (channel) {
+      channel.messages.push(newMessage)
     }
   }
 };
