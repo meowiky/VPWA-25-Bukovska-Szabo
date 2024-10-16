@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import {mapGetters, mapMutations} from 'vuex';
+import { mapMutations } from 'vuex';
 
 export default defineComponent({
   name: 'LoginForm',
@@ -36,9 +36,7 @@ export default defineComponent({
   },
 
   computed: {
-    ...mapGetters('all', {
-      isUserLoggedIn: 'isUserLoggedIn'
-    }),
+
   },
 
   methods: {

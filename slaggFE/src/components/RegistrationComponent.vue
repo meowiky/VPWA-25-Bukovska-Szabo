@@ -25,42 +25,48 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent } from 'vue';
+import { mapMutations } from 'vuex';
 
 export default defineComponent({
   name: 'RegisterForm',
-  setup() {
-    const formData = ref({
-      username: '',
-      email: '',
-      password: ''
-    });
-    const errorMessage = ref('');
 
-    const onSubmit = () => {
-      errorMessage.value = '';
+  data() {
+    return {
+      formData: {
+        username: '',
+        email: '',
+        password: ''
+      },
+      errorMessage: ''
+    };
+  },
 
-      if (!formData.value.username || !formData.value.email || !formData.value.password) {
-        errorMessage.value = 'Please fill in all fields';
+  computed: {
+
+  },
+
+  methods: {
+    ...mapMutations('all', ['toggleIsUserLoggedIn']),
+    onSubmit() {
+      this.errorMessage = '';
+
+      if (!this.formData.username || !this.formData.email || !this.formData.password) {
+        this.errorMessage = 'Please fill in all fields';
         return;
       }
 
-      console.log('Registering...', formData.value);
-
+      console.log('Registering...', this.formData);
+      this.toggleIsUserLoggedIn();
+      this.$router.push('/chat');
       // TODO:: Call registration API
 
-      formData.value = {
+      this.formData = {
         username: '',
         email: '',
         password: ''
       };
-    };
-
-    return {
-      formData,
-      errorMessage,
-      onSubmit
-    };
+    }
   }
 });
 </script>

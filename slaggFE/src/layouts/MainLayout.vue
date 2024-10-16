@@ -10,7 +10,7 @@
         </q-toolbar-title>
 
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
-<!--        <q-btn dense flat round icon="logout" @click="logout" />-->
+        <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
     </q-header>
 
@@ -121,11 +121,12 @@ export default {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
+      isUserLoggedIn: 'isUserLoggedIn'
     }),
   },
 
   methods: {
-    ...mapMutations('all', ['setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
+    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
 
     createChannel() {
       let payload = {
@@ -162,6 +163,11 @@ export default {
         channel: this.selectedChannel,
       }
       this.kickMemberFromChannel(payload);
+    },
+
+    logout() {
+      this.toggleIsUserLoggedIn()
+      this.$router.push('/signin/login');
     }
   },
 };

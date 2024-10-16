@@ -27,6 +27,9 @@ export default route<StateInterface>(function ({ store }) {
     if (!store.getters['all/isUserLoggedIn'] && to.path !== '/signin/login' && to.path !== '/signin/register') {
       next('/signin/login');
     }
+    else if (store.getters['all/isUserLoggedIn'] && (to.path === '/signin/register' || to.path === '/signin/login')) {
+      next('chat');
+    }
     else {
       next();
     }
