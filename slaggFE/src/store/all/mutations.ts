@@ -68,6 +68,12 @@ const mutation: MutationTree<AllStateInterface> = {
     if (channel) {
       channel.messages.push(newMessage)
     }
+  },
+
+  login(state, payload: {email: string, password: string}) {
+    const user = dbConn
+    if (!user) { return false; }
+    return dbConn.verifyUserCredentials(payload.email, payload.password);
   }
 };
 

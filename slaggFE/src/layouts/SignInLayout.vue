@@ -4,7 +4,7 @@
       <q-toolbar>
         <q-toolbar-title>
           <q-avatar>
-            <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg" @click="goIndex">
+            <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
           </q-avatar>
           Slagg
         </q-toolbar-title>
@@ -37,14 +37,10 @@ export default defineComponent({
       router.push('/signin/login');
     }
 
-    function goIndex() {
-      router.push('/');
-    }
 
     return {
       goRegister,
-      goLogin,
-      goIndex
+      goLogin
     }
   }
 })

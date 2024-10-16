@@ -1,115 +1,90 @@
-export const channel_db = {
-  'channel': [
-  {
-    'id': 1,
-    'name': 'general',
-    'visibility': 'public',
-    'adminId': 1,
-    'lastActive': '2020-01-01T00:00:00.000Z'
-  },
-  {
-    'id': 2,
-    'name': 'private_channel',
-    'visibility': 'private',
-    'adminId': 1,
-    'lastActive': '2020-01-01T00:00:00.000Z'
-  }
-]
-}
+import {
+  ChannelStateInterface,
+  MemberStateInterface,
+  MessageStateInterface,
+  UserStateInterface
+} from 'src/store/all/state';
 
-export const messagesChannel_db = {
-  'membersChannel': [
-    {
-      'memberId': 1,
-      'channelId': 1
-    },
-    {
-      'memberId': 2,
-      'channelId': 1
-    }
-  ]
-}
+
 
 
 export const message_db = {
   'message': [
     {
-      'id': 1,
-      'userId': 1,
-      'channelId': 1,
-      'sentAt': '2020-01-01T00:00:00.000Z',
-      'content': 'Hello!'
-    },
+      content: 'Hello!',
+      timestamp: new Date('2020-01-01T00:00:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
     {
-      'id': 2,
-      'userId': 2,
-      'channelId': 1,
-      'sentAt': '2020-01-01T00:00:00.000Z',
-      'content': 'Hey there!'
-    },
+      content: 'Hey there!',
+      timestamp: new Date('2020-01-01T00:00:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
     {
-      'id': 3,
-      'userId': 1,
-      'channelId': 2,
-      'sentAt': '2020-01-01T00:00:00.000Z',
-      'content': 'Hello there!'
-    },
+      content: 'Hello there!',
+      timestamp: new Date('2020-01-01T00:00:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
     {
-      'id': 4,
-      'userId': 2,
-      'channelId': 2,
-      'sentAt': '2020-01-01T00:00:00.000Z',
-      'content': 'Hi!'
-    }
+      content: 'Hi!',
+      timestamp: new Date('2020-01-01T00:00:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
   ],
 }
 
-// TODO:: Remove redundant table
-export const msg_ch_db = {
-  'messagesChannel': [
-    {
-      'messageId': 1,
-      'channelId': 1
-    },
-    {
-      'messageId': 2,
-      'channelId': 1
-    },
-    {
-      'messageId': 3,
-      'channelId': 2
-    },
-    {
-      'messageId': 4,
-      'channelId': 2
-    }
-  ]
-}
 
 export const users_db = {
   'users': [
     {
-      'id': 1,
-      'nickName': 'user1',
-      'firstName': 'John',
-      'lastName': 'Doe',
-      'email': 'j@j.com',
-      'password': 'pass1',
-      'registeredAt': '2020-01-01T00:00:00.000Z',
-      'state': 'offline',
-      'lastActiveState': 'online'
-    },
+      user: {
+        firstName: 'John',
+        lastName: 'Doe',
+        nickName: 'user1',
+        status: 'online'
+      },
+      email: 'j@j.com',
+      password: '123',
+      isLoggedIn: false,
+      channels: []
+    } as UserStateInterface,
     {
-      'id': 2,
-      'nickName': 'user2',
-      'firstName': 'Jane',
-      'lastName': 'Doe',
-      'email': 'j@j.com',
-      'password': 'pass2',
-      'registeredAt': '2020-01-01T00:00:00.000Z',
-      'state': 'offline',
-      'lastActiveState': 'busy'
-    }
+      user: {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        nickName: 'user2',
+        status: 'online'
+      },
+      email: 'j2@j.com',
+      password: '123',
+      isLoggedIn: false,
+      channels: []
+    } as UserStateInterface
   ]
 }
 
+export const channel_db = {
+  'channel': [
+    {
+      name: 'general',
+      isPrivate: false,
+      admin: users_db.users[0].user,
+      members: [users_db.users[0].user, users_db.users[1].user],
+      messages: [message_db.message[0], message_db.message[1]]
+    } as ChannelStateInterface,
+    {
+      name: 'private_channel',
+      isPrivate: true,
+      admin: users_db.users[0].user,
+      members: [users_db.users[0].user, users_db.users[1].user],
+      messages: [message_db.message[2], message_db.message[3]]
+    } as ChannelStateInterface
+  ]
+}
+
+users_db.users[0].channels = [channel_db.channel[0], channel_db.channel[1]] as ChannelStateInterface[]
+users_db.users[1].channels = [channel_db.channel[0], channel_db.channel[1]] as ChannelStateInterface[]
+message_db.message[0].user = users_db.users[0].user as MemberStateInterface
+message_db.message[1].user = users_db.users[1].user as MemberStateInterface
+message_db.message[2].user = users_db.users[0].user as MemberStateInterface
+message_db.message[3].user = users_db.users[1].user as MemberStateInterface
