@@ -6,13 +6,13 @@
 
         <q-toolbar-title>
           <q-avatar>
-            <img src="https://i.imgur.com/u7bezXG.png">
+            <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
           </q-avatar>
           Slagg
         </q-toolbar-title>
 
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
-        <q-btn dense flat round icon="logout" @click="logout" />
+<!--        <q-btn dense flat round icon="logout" @click="logout" />-->
       </q-toolbar>
     </q-header>
 
@@ -28,7 +28,7 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn dense flat icon="exit_to_app" @click="leaveChannel(channel)" />
+            <q-btn dense flat icon="exit_to_app" @click="leaveChannelAction(channel)" />
 
             <q-btn
               dense
@@ -36,7 +36,7 @@
               v-if="channel.admin === loggedUser.user"
               icon="delete"
               color="negative"
-              @click="deleteChannel(channel)"
+              @click="deleteChannelAction(channel)"
             />
           </q-item-section>
         </q-item>
@@ -122,19 +122,19 @@ export default {
     ...mapMutations('all', ['createNewChannel', 'leaveChannel', 'deleteChannel']),
 
     createChannel() {
-      payload = {
-        name: newChannelName,
-        isPrivate: isPrivate
+      let payload = {
+        name: this.newChannelName,
+        isPrivate: this.isPrivate
       }
       this.createNewChannel(payload);
       this.createChannelDialog = false;
     },
 
-    leaveChannel(channel) {
+    leaveChannelAction(channel) {
       this.leaveChannel(channel);
     },
 
-    deleteChannel(channel) {
+    deleteChannelAction(channel) {
       this.deleteChannel(channel);
     },
 
