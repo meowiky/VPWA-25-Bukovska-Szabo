@@ -1,0 +1,32 @@
+{
+  "message": [
+    {
+      "id": 1,
+      "userId": 1,
+      "channelId": 1,
+      "sentAt": "2020-01-01T00:00:00.000Z",
+      "content": "Hello!"
+    },
+    {
+      "id": 2,
+      "userId": 2,
+      "channelId": 1,
+      "sentAt": "2020-01-01T00:00:00.000Z",
+      "content": "Hey there!"
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "channelId": 2,
+      "sentAt": "2020-01-01T00:00:00.000Z",
+      "content": "Hello there!"
+    },
+    {
+      "id": 4,
+      "userId": 2,
+      "channelId": 2,
+      "sentAt": "2020-01-01T00:00:00.000Z",
+      "content": "Hi!"
+    }
+  ],
+}

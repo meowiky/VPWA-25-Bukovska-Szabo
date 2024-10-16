@@ -1,0 +1,26 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "nickName": "user1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "j@j.com",
+      "password": "pass1",
+      "registeredAt": "2020-01-01T00:00:00.000Z",
+      "state": "offline",
+      "lastActiveState": "online"
+    },
+    {
+      "id": 2,
+      "nickName": "user2",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "email": "j@j.com",
+      "password": "pass2",
+      "registeredAt": "2020-01-01T00:00:00.000Z",
+      "state": "offline",
+      "lastActiveState": "busy"
+    }
+  ]
+}

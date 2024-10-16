@@ -1,0 +1,20 @@
+{
+  "messages-channel": [
+    {
+      "messageId": 1,
+      "channelId": 1
+    },
+    {
+      "messageId": 2,
+      "channelId": 1
+    },
+    {
+      "messageId": 3,
+      "channelId": 2
+    },
+    {
+      "messageId": 4,
+      "channelId": 2
+    }
+  ]
+}
