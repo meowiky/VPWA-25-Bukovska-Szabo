@@ -7,8 +7,9 @@ import {
 } from 'vue-router';
 import { StateInterface } from '../store';
 import routes from './routes';
+import { Store } from 'vuex';
 
-export default route<StateInterface>(function ({ store }) {
+export default route<StateInterface>(function ({ store }: { store: Store<StateInterface> }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
     : (process.env.VUE_ROUTER_MODE === 'history' ? createWebHistory : createWebHashHistory);
@@ -23,12 +24,13 @@ export default route<StateInterface>(function ({ store }) {
   });
 
   Router.beforeEach((to, from, next) => {
+    const isUserLoggedIn = store.getters['all/isUserLoggedIn'];
 
-    if (!store.getters['all/isUserLoggedIn'] && to.path !== '/signin/login' && to.path !== '/signin/register') {
+    if (!isUserLoggedIn && to.path !== '/signin/login' && to.path !== '/signin/register') {
       next('/signin/login');
     }
-    else if (store.getters['all/isUserLoggedIn'] && (to.path === '/signin/register' || to.path === '/signin/login')) {
-      next('chat');
+    else if (isUserLoggedIn && (to.path === '/signin/register' || to.path === '/signin/login')) {
+      next('/chat');
     }
     else {
       next();
