@@ -1,5 +1,5 @@
 import { MutationTree } from 'vuex';
-import {AllStateInterface, MemberStateInterface, MessageStateInterface} from './state';
+import {AllStateInterface, MemberStateInterface, MessageStateInterface, UserStateInterface} from './state';
 import { ChannelStateInterface } from './state';
 import * as dbConn from './db_conn';
 
@@ -11,6 +11,11 @@ const mutation: MutationTree<AllStateInterface> = {
 
   setSelectedChannel(state, payload: ChannelStateInterface) {
     state.selectedChannel = payload;
+  },
+
+  setLoggedUser(state, payload: UserStateInterface)
+  {
+    state.loggedUser = payload;
   },
 
   createNewChannel(state, payload: {name: string, isPrivate: boolean}){
