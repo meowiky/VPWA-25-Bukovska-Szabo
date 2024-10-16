@@ -1,5 +1,5 @@
 import { MutationTree } from 'vuex';
-import { AllStateInterface} from './state';
+import {AllStateInterface, MemberStateInterface} from './state';
 import { ChannelStateInterface } from './state';
 import * as dbConn from './db_conn';
 
@@ -24,7 +24,7 @@ const mutation: MutationTree<AllStateInterface> = {
       mutation.deleteChannel(state, payload)
     }
   },
-  
+
   joinChannel(state, payload: string){
     const channel = dbConn.getChannel(payload)
     dbConn.addUserToChannel(state.loggedUser.user, channel);
@@ -35,6 +35,16 @@ const mutation: MutationTree<AllStateInterface> = {
   deleteChannel(state, payload: ChannelStateInterface) {
     state.loggedUser.channels = state.loggedUser.channels.filter(channel => channel !== payload);
     dbConn.deleteChannel(payload);
+  },
+
+  kickMemberFromChannel(state, payload: {member: MemberStateInterface, channel: ChannelStateInterface}) {
+    if (state.loggedUser.user === payload.channel.admin) {
+      dbConn.removeUserFromChannel(payload.member, payload.channel);
+      const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
+      if (channel){
+        channel.members = channel.members.filter((member) => member !== payload.member);
+      }
+    }
   }
 };
 

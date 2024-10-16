@@ -20,7 +20,10 @@
       <q-list>
         <q-item-label header>Channels</q-item-label>
 
-        <q-item clickable v-for="channel in loggedUser.channels" :key="channel.name">
+        <q-item clickable
+                v-for="channel in loggedUser.channels"
+                :key="channel.name"
+                @click="selectChannel(channel)">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -51,27 +54,30 @@
     </q-drawer>
 
     <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered>
-<!--      <q-list>-->
-<!--        <q-item-label header>Channel Members</q-item-label>-->
+      <q-list>
+        <q-item-label header>Channel Members</q-item-label>
+        <template v-if="selectedChannel && selectedChannel.members.length > 0">
+          <q-item v-for="member in selectedChannel.members" :key="member.nickName">
+            <q-item-section>
+              <q-item-label>{{ member.nickName }}</q-item-label>
+              <q-item-label caption>
+                {{ member === selectedChannel.admin ? 'Admin' : 'Member' }}
+              </q-item-label>
+            </q-item-section>
 
-<!--        <q-item v-for="member in currentChannelMembers" :key="member.nickName">-->
-<!--          <q-item-section>-->
-<!--            <q-item-label>{{ member.nickName }}</q-item-label>-->
-<!--            <q-item-label caption>-->
-<!--              {{ member.nickName === currentChannelAdmin ? 'Admin' : 'Member' }}-->
-<!--            </q-item-label>-->
-<!--          </q-item-section>-->
-
-<!--          &lt;!&ndash; Admin-specific functionality for kicking members &ndash;&gt;-->
-<!--          <q-item-section side v-if="member.nickName !== currentChannelAdmin">-->
-<!--            &lt;!&ndash; If current user is admin, allow direct kick &ndash;&gt;-->
-<!--            <q-btn dense flat icon="delete" color="negative" v-if="isAdmin" @click="kickMember(member.nickName)" />-->
-<!--            &lt;!&ndash; Regular members can request to kick another member &ndash;&gt;-->
-<!--            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />-->
-<!--            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>-->
-<!--          </q-item-section>-->
-<!--        </q-item>-->
-<!--      </q-list>-->
+            <q-item-section side v-if=" member !== selectedChannel.admin" >
+              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
+  <!--            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />-->
+  <!--            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>-->
+            </q-item-section>
+          </q-item>
+        </template>
+        <q-item v-else>
+          <q-item-section>
+            <q-item-label>You didnt select a channel</q-item-label>
+          </q-item-section>
+        </q-item>
+      </q-list>
     </q-drawer>
 
     <q-page-container>
@@ -109,6 +115,7 @@ export default {
       rightDrawerOpen: false,
       newChannelName: '',
       isPrivate: false,
+      selectedChannel: null,
     };
   },
 
@@ -119,7 +126,7 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', ['createNewChannel', 'leaveChannel', 'deleteChannel']),
+    ...mapMutations('all', ['createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
 
     createChannel() {
       let payload = {
@@ -149,6 +156,18 @@ export default {
     openCreateChannelDialog() {
       this.createChannelDialog = true;
     },
+
+    selectChannel(channel) {
+      this.selectedChannel = channel;
+    },
+
+    kickMember(member) {
+      let payload = {
+        member: member,
+        channel: this.selectedChannel,
+      }
+      this.kickMemberFromChannel(payload);
+    }
   },
 };
 </script>
