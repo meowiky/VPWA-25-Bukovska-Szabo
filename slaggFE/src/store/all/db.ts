@@ -258,14 +258,16 @@ export const channel_db = {
       isPrivate: false,
       admin: users_db.users[0].user,
       members: [users_db.users[0].user, users_db.users[1].user, users_db.users[2].user],
-      messages: [message_db.message[0], message_db.message[1]]
+      messages: [message_db.message[0], message_db.message[1]],
+      kickVotes: []
     } as ChannelStateInterface,
     {
       name: 'private_channel',
       isPrivate: true,
       admin: users_db.users[0].user,
       members: [users_db.users[0].user, users_db.users[1].user, users_db.users[2].user],
-      messages: [message_db.message[2], message_db.message[3]]
+      messages: [message_db.message[2], message_db.message[3]],
+      kickVotes: []
     } as ChannelStateInterface,
     {
       name: 'super_channel',
@@ -304,7 +306,8 @@ export const channel_db = {
         message_db.message[32],
         message_db.message[33],
         message_db.message[34],
-      ]
+      ],
+      kickVotes: []
     } as ChannelStateInterface
   ]
 }

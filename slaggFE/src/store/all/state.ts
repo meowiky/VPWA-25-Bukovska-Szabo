@@ -11,12 +11,20 @@ export interface MemberStateInterface {
   status: 'online' | 'DND' | 'offline';
 }
 
+export interface KickVoteStateInterface {
+  member: MemberStateInterface;
+  votes: {
+    voter: MemberStateInterface;
+  }[];
+}
+
 export interface ChannelStateInterface {
   name: string;
   isPrivate: boolean;
   admin: MemberStateInterface;
   members: MemberStateInterface[];
   messages: MessageStateInterface[];
+  kickVotes: KickVoteStateInterface[];
 }
 
 export interface UserStateInterface {
@@ -59,7 +67,8 @@ function state(): AllStateInterface {
         status: 'offline'
       },
       members: [],
-      messages: []
+      messages: [],
+      kickVotes: []
     },
     usersAsMemberInterface: []
   };

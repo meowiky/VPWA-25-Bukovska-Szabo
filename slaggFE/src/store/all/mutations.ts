@@ -29,7 +29,8 @@ const mutation: MutationTree<AllStateInterface> = {
       isPrivate: payload.isPrivate,
       admin: state.loggedUser.user,
       members: [state.loggedUser.user],
-      messages: []
+      messages: [],
+      kickVotes: []
     }
     dbConn.createNewChannel(newChannel);
     state.loggedUser.channels.push(newChannel)
@@ -58,12 +59,10 @@ const mutation: MutationTree<AllStateInterface> = {
   },
 
   kickMemberFromChannel(state, payload: {member: MemberStateInterface, channel: ChannelStateInterface}) {
-    if (state.loggedUser.user === payload.channel.admin) {
-      dbConn.removeUserFromChannel(payload.member, payload.channel);
-      const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
-      if (channel){
-        channel.members = channel.members.filter((member) => member !== payload.member);
-      }
+    dbConn.removeUserFromChannel(payload.member, payload.channel);
+    const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
+    if (channel){
+      channel.members = channel.members.filter((member) => member !== payload.member);
     }
   },
 
@@ -85,6 +84,28 @@ const mutation: MutationTree<AllStateInterface> = {
 
     if (state.selectedChannel.name === payload.channel.name) {
       state.selectedChannel.members = [...payload.channel.members]; // to ensure reactivity bcs it didnt reload the ui properly
+    }
+  },
+
+  addKickVoteOrKickMember(state, payload: { member: MemberStateInterface, channel: ChannelStateInterface }) {
+    const kickVoteEntry = payload.channel.kickVotes.find(vote => vote.member.nickName === payload.member.nickName);
+
+    if (kickVoteEntry) {
+      kickVoteEntry.votes.push({ voter: state.loggedUser.user });
+    }
+    else {
+      payload.channel.kickVotes.push({
+        member: payload.member,
+        votes: [{ voter: state.loggedUser.user }]
+      });
+    }
+
+    if (kickVoteEntry && kickVoteEntry.votes.length >= 3) {
+      const index = payload.channel.kickVotes.findIndex(vote => vote.member.nickName === payload.member.nickName);
+      if (index > -1) {
+        payload.channel.kickVotes.splice(index, 1);
+      }
+      this.kickMemberFromChannel(state, payload);
     }
   }
 };

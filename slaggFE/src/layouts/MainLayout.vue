@@ -66,37 +66,36 @@
 
             <q-item-section side v-if="member !== selectedChannel.admin">
               <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
-  <!--            <q-btn dense flat icon="delete" color="warning" v-else @click="requestKick(member.nickName)" />-->
-  <!--            <q-badge v-if="kickRequests[member.nickName]" color="orange">{{ kickRequests[member.nickName].length }} / 3</q-badge>-->
+              <q-btn dense flat icon="delete" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" v-else @click="requestKick(member)" />
+              <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
+          <template v-if="!selectedChannel.isPrivate || loggedUser.user === selectedChannel.admin">
+            <q-item-label header>Invite User</q-item-label>
+
+            <q-item>
+              <q-item-section>
+                <q-input
+                  v-model="inviteNickName"
+                  label="NickName"
+                  placeholder="Enter user's nickname"
+                  filled
+                />
+              </q-item-section>
+              <q-item-section side>
+                <q-btn @click="inviteUser" label="Invite" color="primary" />
+              </q-item-section>
+            </q-item>
+            <q-item-section v-if="inviteError">
+              <q-banner color="negative">{{ inviteError }}</q-banner>
+            </q-item-section>
+          </template>
         </template>
         <q-item v-else>
           <q-item-section>
             <q-item-label>You didn't select a channel</q-item-label>
           </q-item-section>
         </q-item>
-
-        <template v-if="!selectedChannel.isPrivate || loggedUser.user === selectedChannel.admin">
-          <q-item-label header>Invite User</q-item-label>
-
-          <q-item>
-            <q-item-section>
-              <q-input
-                v-model="inviteNickName"
-                label="NickName"
-                placeholder="Enter user's nickname"
-                filled
-              />
-            </q-item-section>
-            <q-item-section side>
-              <q-btn @click="inviteUser" label="Invite" color="primary" />
-            </q-item-section>
-          </q-item>
-          <q-item-section v-if="inviteError">
-            <q-banner color="negative">{{ inviteError }}</q-banner>
-          </q-item-section>
-        </template>
       </q-list>
     </q-drawer>
 
@@ -150,7 +149,7 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel']),
+    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel', 'addKickVoteOrKickMember']),
 
     createChannel() {
       let payload = {
@@ -210,6 +209,37 @@ export default {
       }
       this.addMemberToChannel(payload);
       this.inviteNickName = '';
+    },
+
+    alreadyVotedFor(member) {
+      const voteData = this.selectedChannel.kickVotes.find(
+        (vote) => vote.member.nickName === member.nickName
+      );
+
+      if (voteData) {
+        return voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName);
+      }
+      return false;
+    },
+
+    getVoteCount(member) {
+      const voteData = this.selectedChannel.kickVotes.find(
+        (vote) => vote.member.nickName === member.nickName
+      );
+      return voteData ? voteData.votes.length : 0;
+    },
+
+    requestKick(member) {
+      if (this.alreadyVotedFor(member)) {
+        return;
+      }
+
+      let payload = {
+        member: member,
+        channel: this.selectedChannel
+      };
+
+      this.addKickVoteOrKickMember(payload);
     },
 
     logout() {
