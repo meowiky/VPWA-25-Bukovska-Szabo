@@ -77,7 +77,7 @@
           </q-item-section>
         </q-item>
 
-        <template v-if="loggedUser.user === selectedChannel.admin">
+        <template v-if="!selectedChannel.isPrivate || loggedUser.user === selectedChannel.admin">
           <q-item-label header>Invite User</q-item-label>
 
           <q-item>
