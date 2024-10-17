@@ -31,6 +31,7 @@ export interface AllStateInterface {
   isUserLoggedIn: boolean;
   loggedUser: UserStateInterface;
   selectedChannel: ChannelStateInterface;
+  usersAsMemberInterface: MemberStateInterface[];
 }
 
 function state(): AllStateInterface {
@@ -59,7 +60,8 @@ function state(): AllStateInterface {
       },
       members: [],
       messages: []
-    }
+    },
+    usersAsMemberInterface: []
   };
 }
 

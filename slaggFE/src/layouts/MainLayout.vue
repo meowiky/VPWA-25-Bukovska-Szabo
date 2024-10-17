@@ -76,6 +76,27 @@
             <q-item-label>You didn't select a channel</q-item-label>
           </q-item-section>
         </q-item>
+
+        <template v-if="loggedUser.user === selectedChannel.admin">
+          <q-item-label header>Invite User</q-item-label>
+
+          <q-item>
+            <q-item-section>
+              <q-input
+                v-model="inviteNickName"
+                label="NickName"
+                placeholder="Enter user's nickname"
+                filled
+              />
+            </q-item-section>
+            <q-item-section side>
+              <q-btn @click="inviteUser" label="Invite" color="primary" />
+            </q-item-section>
+          </q-item>
+          <q-item-section v-if="inviteError">
+            <q-banner color="negative">{{ inviteError }}</q-banner>
+          </q-item-section>
+        </template>
       </q-list>
     </q-drawer>
 
@@ -113,7 +134,9 @@ export default {
       leftDrawerOpen: true,
       rightDrawerOpen: false,
       newChannelName: '',
-      isPrivate: false
+      isPrivate: false,
+      inviteNickName: '',
+      inviteError: '',
     };
   },
 
@@ -121,12 +144,13 @@ export default {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
-      isUserLoggedIn: 'isUserLoggedIn'
+      isUserLoggedIn: 'isUserLoggedIn',
+      allUsers: 'getAllUsers'
     }),
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel']),
+    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel']),
 
     createChannel() {
       let payload = {
@@ -165,8 +189,31 @@ export default {
       this.kickMemberFromChannel(payload);
     },
 
+    inviteUser() {
+      this.inviteError = '';
+
+      const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
+      if (!userToInvite) {
+        this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
+        return;
+      }
+
+      const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === this.inviteNickName);
+
+      if (isAlreadyMember) {
+        this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
+        return;
+      }
+      let payload = {
+        member: userToInvite,
+        channel: this.selectedChannel
+      }
+      this.addMemberToChannel(payload);
+      this.inviteNickName = '';
+    },
+
     logout() {
-      this.toggleIsUserLoggedIn()
+      this.toggleIsUserLoggedIn();
       this.$router.push('/signin/login');
     }
   },

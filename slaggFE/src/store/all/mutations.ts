@@ -18,6 +18,11 @@ const mutation: MutationTree<AllStateInterface> = {
     state.loggedUser = payload;
   },
 
+  setOtherUsers(state, payload: MemberStateInterface[])
+  {
+    state.usersAsMemberInterface = payload;
+  },
+
   createNewChannel(state, payload: {name: string, isPrivate: boolean}){
     const newChannel: ChannelStateInterface = {
       name: payload.name,
@@ -72,6 +77,14 @@ const mutation: MutationTree<AllStateInterface> = {
     const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
     if (channel) {
       channel.messages.push(newMessage)
+    }
+  },
+
+  addMemberToChannel(state, payload: { member: MemberStateInterface, channel: ChannelStateInterface }) {
+    dbConn.addUserToChannel(payload.member, payload.channel);
+
+    if (state.selectedChannel.name === payload.channel.name) {
+      state.selectedChannel.members = [...payload.channel.members]; // to ensure reactivity bcs it didnt reload the ui properly
     }
   }
 };

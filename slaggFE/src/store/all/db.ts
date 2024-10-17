@@ -224,6 +224,30 @@ export const users_db = {
       isLoggedIn: false,
       channels: []
     } as UserStateInterface,
+    {
+      user: {
+        firstName: 'Peter',
+        lastName: 'surname',
+        nickName: 'pete',
+        status: 'online'
+      },
+      email: 'pete@gmail.com',
+      password: '123',
+      isLoggedIn: false,
+      channels: []
+    } as UserStateInterface,
+    {
+      user: {
+        firstName: 'Juraj',
+        lastName: 'surname',
+        nickName: 'Duro',
+        status: 'online'
+      },
+      email: 'juro@gmail.com',
+      password: '123',
+      isLoggedIn: false,
+      channels: []
+    } as UserStateInterface,
   ]
 }
 
@@ -233,14 +257,14 @@ export const channel_db = {
       name: 'general',
       isPrivate: false,
       admin: users_db.users[0].user,
-      members: [users_db.users[0].user, users_db.users[1].user],
+      members: [users_db.users[0].user, users_db.users[1].user, users_db.users[2].user],
       messages: [message_db.message[0], message_db.message[1]]
     } as ChannelStateInterface,
     {
       name: 'private_channel',
       isPrivate: true,
       admin: users_db.users[0].user,
-      members: [users_db.users[0].user, users_db.users[1].user],
+      members: [users_db.users[0].user, users_db.users[1].user, users_db.users[2].user],
       messages: [message_db.message[2], message_db.message[3]]
     } as ChannelStateInterface,
     {

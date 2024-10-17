@@ -54,3 +54,11 @@ export function verifyUserCredentials(email: string, password: string) {
   if (user.password !== password) { return false }
   return user
 }
+
+export function getAllUsersAsMemberInterface(loggedUser: UserStateInterface): MemberStateInterface[] {
+  const usersAsMembers: MemberStateInterface[] = db.users_db.users
+    .filter(u => u.user.nickName !== loggedUser.user.nickName)
+    .map(u => u.user as MemberStateInterface);
+
+  return usersAsMembers;
+}
