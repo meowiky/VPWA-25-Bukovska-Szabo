@@ -9,40 +9,37 @@
     </div>
 
     <div v-else class="chat-content">
-      <q-card class="q-pa-md">
-        <q-card-section>
-          <div class="text-h6">{{ selectedChannel.name }} Chat</div>
-        </q-card-section>
+      <q-card class="q-pa-md chat-container">
 
-        <q-list class="message-list">
-          <q-item v-for="message in selectedChannel.messages" :key="message.timestamp" :class="{'message-right': isLoggedUser(message)}">
-            <q-item-section>
-              <q-item-label :class="{'sent-message': isLoggedUser(message), 'received-message': !isLoggedUser(message)}">
-                {{ message.content }}
-              </q-item-label>
-              <q-item-label caption>
-                {{ message.user.nickName }}
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
+        <div class="message-list">
+          <q-chat-message
+            v-for="(message, index) in selectedChannel.messages"
+            :key="index"
+            :name="message.user.nickName"
+            :text="[message.content]"
+            :sent="isLoggedUser(message)"
+            :stamp="new Date(message.timestamp).toLocaleString()"
+          />
+        </div>
+
+        <div class="bottom-section">
+          <div v-if="displayedError" class="error-banner">
+            <q-banner type="negative" dense>
+              {{ displayedError }}
+              <q-btn flat round icon="close" @click="displayedError = ''" />
+            </q-banner>
+          </div>
+
+          <div class="message-input">
+            <q-input v-model="newMessage" label="Type a message..." outlined class="message-text-input" />
+            <q-btn @click="handleMessage" label="Send" color="primary" />
+          </div>
+        </div>
       </q-card>
-
-      <div v-if="displayedError" class="q-my-md">
-        <q-banner type="negative" dense>
-          {{ displayedError }}
-          <q-btn flat round icon="close" @click="displayedError = ''" />
-        </q-banner>
-      </div>
-
-
-      <div class="message-input">
-        <q-input v-model="newMessage" label="Type a message..." outlined />
-        <q-btn @click="handleMessage" label="Send" color="primary" />
-      </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import {mapGetters, mapMutations} from 'vuex';
@@ -139,7 +136,9 @@ export default {
             }
             this.addMemberToChannel(payload);
           }
-          this.displayedError = 'You are not allowed to invite new members to this channel.';
+          else {
+            this.displayedError = 'You are not allowed to invite new members to this channel.';
+          }
           break;
 
         case '/kick':
@@ -221,33 +220,34 @@ export default {
 .chat-content {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   height: 100%;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
 }
 
 .message-list {
   flex: 1;
   overflow-y: auto;
-  max-height: 70vh;
-  padding-bottom: 10px;
+  padding: 10px;
+  height: calc(100vh - 200px);
 }
 
-.message-right {
-  text-align: right;
+.bottom-section {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  z-index: 2;
 }
 
-.sent-message {
-  background-color: #E0F7FA;
-  padding: 5px;
-  border-radius: 5px;
-  margin-bottom: 5px;
-}
-
-.received-message {
-  background-color: #E0E0E0;
-  padding: 5px;
-  border-radius: 5px;
-  margin-bottom: 5px;
+.error-banner {
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .message-input {
@@ -256,5 +256,21 @@ export default {
   align-items: center;
   padding: 10px;
   border-top: 1px solid #e0e0e0;
+  background-color: white;
 }
+
+.q-chat-message.sent .q-message {
+  justify-content: flex-end;
+}
+
+.q-chat-message.received .q-message {
+  justify-content: flex-start;
+}
+
+.message-text-input {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
 </style>
+

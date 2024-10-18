@@ -1,7 +1,8 @@
 <template>
-  <q-layout view="hHh lpR fFf">
+  <q-layout view="hHh LpR fFf">
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
+        <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>
           <q-avatar>
             <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
@@ -202,6 +203,10 @@ export default {
 
     deleteChannelAction(channel) {
       this.deleteChannel(channel);
+    },
+
+    toggleLeftDrawer() {
+      this.leftDrawerOpen = !this.leftDrawerOpen;
     },
 
     toggleRightDrawer() {
