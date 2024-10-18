@@ -28,9 +28,17 @@
         </q-list>
       </q-card>
 
+      <div v-if="displayedError" class="q-my-md">
+        <q-banner type="negative" dense>
+          {{ displayedError }}
+          <q-btn flat round icon="close" @click="displayedError = ''" />
+        </q-banner>
+      </div>
+
+
       <div class="message-input">
         <q-input v-model="newMessage" label="Type a message..." outlined />
-        <q-btn @click="sendMessage" label="Send" color="primary" />
+        <q-btn @click="handleMessage" label="Send" color="primary" />
       </div>
     </div>
   </div>
@@ -43,6 +51,7 @@ export default {
   data() {
     return {
       newMessage: '',
+      displayedError: ''
     };
   },
 
@@ -50,15 +59,27 @@ export default {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
+      allUsers: 'getAllUsers'
     }),
   },
 
   methods: {
-    ...mapMutations('all', ['sendNewMessage']),
+    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel']),
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.user.nickName;
     },
+
+    handleMessage() {
+      const messageContent = this.newMessage.trim();
+      if (messageContent.startsWith('/')) {
+        this.handleCommand(messageContent);
+      }
+      else {
+        this.sendMessage();
+      }
+    },
+
     sendMessage() {
       let payload = {
         content: this.newMessage,
@@ -67,7 +88,52 @@ export default {
       }
       this.sendNewMessage(payload)
       this.newMessage = '';
-    }
+    },
+
+    handleCommand(commandString) {
+      const [command, ...args] = commandString.split(' ');
+
+      switch (command.toLowerCase()) {
+        case '/join':
+          break;
+
+        case '/invite':
+          this.displayedError = '';
+          if (!this.selectedChannel.isPrivate || this.loggedUser.user === this.selectedChannel.admin) {
+            const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
+            if (!userToInvite) {
+              this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
+              return;
+            }
+
+            const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === args[0]);
+
+            if (isAlreadyMember) {
+              this.displayedError = `User '${args[0]}' is already a member of this channel.`;
+              return;
+            }
+            let payload = {
+              member: userToInvite,
+              channel: this.selectedChannel
+            }
+            this.addMemberToChannel(payload);
+          }
+          this.displayedError = 'You are not allowed to invite new members to this channel.';
+          break;
+
+        case '/kick':
+          break;
+
+        case '/cancel':
+          break;
+
+        case '/quit':
+          break;
+
+        default:
+          this.sendMessage();
+      }
+    },
   }
 };
 </script>
