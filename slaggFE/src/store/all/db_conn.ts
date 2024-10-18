@@ -62,3 +62,7 @@ export function getAllUsersAsMemberInterface(loggedUser: UserStateInterface): Me
 
   return usersAsMembers;
 }
+
+export function getAllPublicChannels(): ChannelStateInterface[] {
+  return db.channel_db.channel.filter(ch => !ch.isPrivate);
+}

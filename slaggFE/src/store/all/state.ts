@@ -40,6 +40,7 @@ export interface AllStateInterface {
   loggedUser: UserStateInterface;
   selectedChannel: ChannelStateInterface;
   usersAsMemberInterface: MemberStateInterface[];
+  publicChannels: ChannelStateInterface[];
 }
 
 function state(): AllStateInterface {
@@ -70,7 +71,8 @@ function state(): AllStateInterface {
       messages: [],
       kickVotes: []
     },
-    usersAsMemberInterface: []
+    usersAsMemberInterface: [],
+    publicChannels: []
   };
 }
 

@@ -14,6 +14,9 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   },
   getAllUsers (state) {
     return state.usersAsMemberInterface
+  },
+  getAllPublicChannels (state) {
+    return state.publicChannels
   }
 };
 

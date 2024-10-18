@@ -23,6 +23,10 @@ const mutation: MutationTree<AllStateInterface> = {
     state.usersAsMemberInterface = payload;
   },
 
+  setAllPublicChannels(state, payload: ChannelStateInterface[]){
+    state.publicChannels = payload;
+  },
+
   createNewChannel(state, payload: {name: string, isPrivate: boolean}){
     const newChannel: ChannelStateInterface = {
       name: payload.name,
@@ -44,13 +48,9 @@ const mutation: MutationTree<AllStateInterface> = {
     }
   },
 
-  joinChannel(state, payload: string){
-    const channel = dbConn.getChannel(payload)
-    if (channel == null) return
-
-    dbConn.addUserToChannel(state.loggedUser.user, channel);
-    channel.members.push(state.loggedUser.user)
-    state.loggedUser.channels.push(channel)
+  joinChannel(state, payload: ChannelStateInterface){
+    dbConn.addUserToChannel(state.loggedUser.user, payload);
+    state.loggedUser.channels.push(payload)
   },
 
   deleteChannel(state, payload: ChannelStateInterface) {

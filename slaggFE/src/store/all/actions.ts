@@ -14,6 +14,8 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
     commit('setLoggedUser', loggedUser);
     const allUsers = await dbConn.getAllUsersAsMemberInterface(loggedUser);
     commit('setOtherUsers', allUsers);
+    const allPublicChannels = await dbConn.getAllPublicChannels();
+    commit('setAllPublicChannels', allPublicChannels);
     return loggedUser;
   }
 };

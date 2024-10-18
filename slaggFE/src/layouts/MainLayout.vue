@@ -49,6 +49,12 @@
           </q-item-section>
           <q-item-section>Create New Channel</q-item-section>
         </q-item>
+        <q-item clickable @click="openPublicChannelsDialog">
+          <q-item-section avatar>
+            <q-icon name="visibility" />
+          </q-item-section>
+          <q-item-section>Show all joinable public Channels</q-item-section>
+        </q-item>
       </q-list>
     </q-drawer>
 
@@ -103,6 +109,29 @@
       <router-view />
     </q-page-container>
 
+    <q-dialog v-model="publicChannelsDialog">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Join Public Channels</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-list>
+            <q-item v-for="channel in filteredPublicChannels" :key="channel.name">
+              <q-item-section>{{ channel.name }}</q-item-section>
+              <q-item-section side>
+                <q-btn icon="add" @click="joinPublicChannel(channel)" />
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Close" @click="publicChannelsDialog = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="createChannelDialog">
       <q-card>
         <q-card-section>
@@ -130,6 +159,7 @@ export default {
   data() {
     return {
       createChannelDialog: false,
+      publicChannelsDialog: false,
       leftDrawerOpen: true,
       rightDrawerOpen: false,
       newChannelName: '',
@@ -144,12 +174,18 @@ export default {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
       isUserLoggedIn: 'isUserLoggedIn',
-      allUsers: 'getAllUsers'
+      allUsers: 'getAllUsers',
+      allPublicChannels: 'getAllPublicChannels'
     }),
+    filteredPublicChannels() {
+      return this.allPublicChannels.filter(
+        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+      );
+    },
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel', 'addKickVoteOrKickMember']),
+    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel', 'addKickVoteOrKickMember', 'joinChannel']),
 
     createChannel() {
       let payload = {
@@ -176,8 +212,17 @@ export default {
       this.createChannelDialog = true;
     },
 
+    openPublicChannelsDialog() {
+      this.publicChannelsDialog = true;
+    },
+
     selectChannel(channel) {
       this.setSelectedChannel(channel);
+    },
+
+    joinPublicChannel(channel) {
+      this.joinChannel(channel);
+      this.publicChannelsDialog = false;
     },
 
     kickMember(member) {

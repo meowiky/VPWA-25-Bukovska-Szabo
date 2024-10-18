@@ -183,6 +183,16 @@ export const message_db = {
       timestamp: new Date('2020-01-03T11:30:00.000Z'),
       user: {}
     } as MessageStateInterface,
+    {
+      content: 'Aspon ze tu neni lulu',
+      timestamp: new Date('2020-01-03T11:30:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
+    {
+      content: 'Jupi neni tu lulu',
+      timestamp: new Date('2020-01-03T11:33:00.000Z'),
+      user: {}
+    } as MessageStateInterface,
   ]
 }
 
@@ -308,12 +318,20 @@ export const channel_db = {
         message_db.message[34],
       ],
       kickVotes: []
-    } as ChannelStateInterface
+    } as ChannelStateInterface,
+    {
+      name: 'channel_without_lulu',
+      isPrivate: false,
+      admin: users_db.users[0].user,
+      members: [users_db.users[0].user, users_db.users[1].user],
+      messages: [message_db.message[35], message_db.message[36]],
+      kickVotes: []
+    } as ChannelStateInterface,
   ]
 }
 
-users_db.users[0].channels = [channel_db.channel[0], channel_db.channel[1], channel_db.channel[2]] as ChannelStateInterface[]
-users_db.users[1].channels = [channel_db.channel[0], channel_db.channel[1], channel_db.channel[2]] as ChannelStateInterface[]
+users_db.users[0].channels = [channel_db.channel[0], channel_db.channel[1], channel_db.channel[2], channel_db.channel[3]] as ChannelStateInterface[]
+users_db.users[1].channels = [channel_db.channel[0], channel_db.channel[1], channel_db.channel[2], channel_db.channel[3]] as ChannelStateInterface[]
 users_db.users[2].channels = [channel_db.channel[0], channel_db.channel[1], channel_db.channel[2]] as ChannelStateInterface[]
 message_db.message[0].user = users_db.users[0].user as MemberStateInterface
 message_db.message[1].user = users_db.users[1].user as MemberStateInterface
@@ -350,3 +368,5 @@ message_db.message[31].user = users_db.users[2].user as MemberStateInterface
 message_db.message[32].user = users_db.users[0].user as MemberStateInterface
 message_db.message[33].user = users_db.users[1].user as MemberStateInterface
 message_db.message[34].user = users_db.users[2].user as MemberStateInterface
+message_db.message[35].user = users_db.users[0].user as MemberStateInterface
+message_db.message[36].user = users_db.users[1].user as MemberStateInterface
