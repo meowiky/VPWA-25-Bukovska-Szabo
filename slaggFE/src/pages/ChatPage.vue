@@ -59,12 +59,18 @@ export default {
     ...mapGetters('all', {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
-      allUsers: 'getAllUsers'
+      allUsers: 'getAllUsers',
+      allPublicChannels: 'getAllPublicChannels'
     }),
+    filteredPublicChannels() {
+      return this.allPublicChannels.filter(
+        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+      );
+    },
   },
 
   methods: {
-    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember', 'leaveChannel', 'deleteChannel']),
+    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember', 'leaveChannel', 'deleteChannel', 'joinChannel']),
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.user.nickName;
@@ -95,6 +101,21 @@ export default {
 
       switch (command.toLowerCase()) {
         case '/join':
+          const isAlreadyInChannel = this.loggedUser.channels.some((userChannel) => userChannel.name === args[0]);
+
+          if (isAlreadyInChannel) {
+            this.displayedError = 'You are already in this channel.';
+            break;
+          }
+
+          const channelToJoin = this.filteredPublicChannels.find((channel) => channel.name === args[0]);
+
+          if (channelToJoin) {
+            this.joinChannel(channelToJoin);
+          }
+          else {
+            this.displayedError = 'This channel does not exist or it is a private channel.';
+          }
           break;
 
         case '/invite':
