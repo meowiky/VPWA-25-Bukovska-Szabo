@@ -64,7 +64,7 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel']),
+    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember']),
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.user.nickName;
@@ -122,6 +122,42 @@ export default {
           break;
 
         case '/kick':
+          if (args[0] === this.loggedUser.user.nickName) {
+            this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
+          }
+          const memberToKick = this.selectedChannel.members.find((member) => member.nickName === args[0]);
+          if (this.loggedUser.user === this.selectedChannel.admin) {
+            if (!memberToKick) {
+              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+            }
+            let payload = {
+              member: memberToKick,
+              channel: this.selectedChannel,
+            }
+            this.kickMemberFromChannel(payload);
+          }
+          else if (!this.selectedChannel.isPrivate) {
+            this.displayedError = 'You are not the admin of this channel, so you will only vote to kick a member.';
+            if (!memberToKick) {
+              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+            }
+
+            const voteData = this.selectedChannel.kickVotes.find((vote) => vote.member.nickName === args[0]);
+            if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName)) {
+              this.displayedError = `You have already voted to kick a user with nickname '${args[0]}' out.`;
+            }
+            else {
+              let payload = {
+                member: memberToKick,
+                channel: this.selectedChannel
+              };
+
+              this.addKickVoteOrKickMember(payload);
+            }
+          }
+          else {
+            this.displayedError = 'You are not allowed to kick or request to kick a member out of this channel.';
+          }
           break;
 
         case '/cancel':
@@ -133,6 +169,7 @@ export default {
         default:
           this.sendMessage();
       }
+      this.newMessage = '';
     },
   }
 };
