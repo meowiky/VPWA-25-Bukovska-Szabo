@@ -66,7 +66,7 @@
 
             <q-item-section side v-if="member !== selectedChannel.admin">
               <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
-              <q-btn dense flat icon="delete" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" v-else @click="requestKick(member)" />
+              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
