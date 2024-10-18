@@ -124,6 +124,7 @@ export default {
         case '/kick':
           if (args[0] === this.loggedUser.user.nickName) {
             this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
+            break;
           }
           const memberToKick = this.selectedChannel.members.find((member) => member.nickName === args[0]);
           if (this.loggedUser.user === this.selectedChannel.admin) {
