@@ -64,7 +64,7 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember']),
+    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember', 'leaveChannel', 'deleteChannel']),
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.user.nickName;
@@ -162,9 +162,16 @@ export default {
           break;
 
         case '/cancel':
+          this.leaveChannel(this.selectedChannel);
           break;
 
         case '/quit':
+          if (this.loggedUser.user === this.selectedChannel.admin) {
+            this.deleteChannel(this.selectedChannel);
+          }
+          else {
+            this.displayedError = 'You are not admin of this channel, so you can not delete it.';
+          }
           break;
 
         default:
