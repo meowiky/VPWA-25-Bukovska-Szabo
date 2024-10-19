@@ -79,6 +79,19 @@ const mutation: MutationTree<AllStateInterface> = {
     }
   },
 
+  fetchNewMessage(state, payload: {content: string, timestamp: Date, channel: ChannelStateInterface, user: MemberStateInterface}){
+    const newMessage: MessageStateInterface = {
+      content: payload.content,
+      timestamp: payload.timestamp,
+      user: payload.user
+    }
+    dbConn.saveMessage(newMessage, payload.channel);
+    const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
+    if (channel) {
+      channel.messages.push(newMessage)
+    }
+  },
+
   addMemberToChannel(state, payload: { member: MemberStateInterface, channel: ChannelStateInterface }) {
     dbConn.addUserToChannel(payload.member, payload.channel);
 

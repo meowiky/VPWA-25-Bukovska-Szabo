@@ -13,7 +13,7 @@
 
         <div class="message-list">
           <q-infinite-scroll
-            :key="selectedChannel.name"
+            :key="messagesCompositeKey"
             @load="loadMoreMessages"
             :offset="100"
             :debounce="1000"
@@ -42,6 +42,15 @@
             <q-input v-model="newMessage" label="Type a message..." outlined class="message-text-input" />
             <q-btn @click="handleMessage" label="Send" color="primary" />
           </div>
+
+          <div class="debug-section">
+            <q-btn
+              label="Simulate"
+              color="red"
+              @click="toggleSimulatedMessages"
+              :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"
+            />
+          </div>
         </div>
       </q-card>
     </div>
@@ -59,7 +68,8 @@ export default {
       displayedError: '',
       loading: false,
       itemsPerPage: 20,
-      visibleMessages: []
+      visibleMessages: [],
+      simulateIncomingMessages: false
     };
   },
 
@@ -75,6 +85,10 @@ export default {
         channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
       );
     },
+
+    messagesCompositeKey() {
+      return `${this.selectedChannel.name}-${this.visibleMessages.length}`;
+    }
   },
 
   created() {
@@ -82,11 +96,20 @@ export default {
   },
 
   watch: {
-    selectedChannel: 'initMessages'
+    selectedChannel: 'initMessages',
   },
 
   methods: {
-    ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember', 'leaveChannel', 'deleteChannel', 'joinChannel']),
+    ...mapMutations('all', [
+      'sendNewMessage',
+      'addMemberToChannel',
+      'kickMemberFromChannel',
+      'addKickVoteOrKickMember',
+      'leaveChannel',
+      'deleteChannel',
+      'joinChannel',
+      'fetchNewMessage'
+    ]),
 
     initMessages() {
       if (this.selectedChannel && this.selectedChannel.messages) {
@@ -106,6 +129,40 @@ export default {
       else {
         this.sendMessage();
       }
+    },
+
+    toggleSimulatedMessages() {
+      if (this.simulateIncomingMessages) {
+        clearInterval(this.simulationInterval);
+        this.simulateIncomingMessages = false;
+      } else {
+        this.simulationInterval = setInterval(this.simulateIncomingMessage, 5000);
+        this.simulateIncomingMessages = true;
+      }
+    },
+
+    simulateIncomingMessage() {
+
+      const otherUsers = this.allUsers.filter(user => user.nickName !== this.loggedUser.user.nickName);
+      const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+      const randomMessageContent = 'Hello from ' + randomUser.nickName;
+
+      const incomingMessage = {
+        user: randomUser,
+        content: randomMessageContent,
+        timestamp: new Date(),
+        channel: this.selectedChannel
+      };
+
+      this.fetchNewMessage(incomingMessage)
+      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
+
+      this.$q.notify({
+        message: `${randomUser.nickName} says: ${randomMessageContent}`,
+        color: 'info',
+        position: 'top',
+        timeout: 3000
+      });
     },
 
     loadMoreMessages() {
@@ -131,6 +188,7 @@ export default {
         channel: this.selectedChannel
       }
       this.sendNewMessage(payload)
+      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
       this.newMessage = '';
     },
 
@@ -311,6 +369,13 @@ export default {
 .message-text-input {
   flex-grow: 1;
   margin-right: 10px;
+}
+
+.debug-section {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 </style>
