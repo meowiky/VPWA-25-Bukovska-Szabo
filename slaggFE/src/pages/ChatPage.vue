@@ -13,6 +13,7 @@
 
         <div class="message-list">
           <q-infinite-scroll
+            :key="selectedChannel.name"
             @load="loadMoreMessages"
             :offset="100"
             reverse
