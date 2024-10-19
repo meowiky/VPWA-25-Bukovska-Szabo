@@ -16,6 +16,7 @@
             :key="selectedChannel.name"
             @load="loadMoreMessages"
             :offset="100"
+            :debounce="1000"
             reverse
           >
             <q-chat-message
