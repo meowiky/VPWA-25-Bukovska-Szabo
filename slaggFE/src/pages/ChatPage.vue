@@ -12,14 +12,20 @@
       <q-card class="q-pa-md chat-container">
 
         <div class="message-list">
-          <q-chat-message
-            v-for="(message, index) in selectedChannel.messages"
-            :key="index"
-            :name="message.user.nickName"
-            :text="[message.content]"
-            :sent="isLoggedUser(message)"
-            :stamp="new Date(message.timestamp).toLocaleString()"
-          />
+          <q-infinite-scroll
+            @load="loadMoreMessages"
+            :offset="100"
+            reverse
+          >
+            <q-chat-message
+              v-for="(message, index) in visibleMessages"
+              :key="index"
+              :name="message.user.nickName"
+              :text="[message.content]"
+              :sent="isLoggedUser(message)"
+              :stamp="new Date(message.timestamp).toLocaleString()"
+            />
+          </q-infinite-scroll>
         </div>
 
         <div class="bottom-section">
@@ -48,7 +54,10 @@ export default {
   data() {
     return {
       newMessage: '',
-      displayedError: ''
+      displayedError: '',
+      loading: false,
+      itemsPerPage: 20,
+      visibleMessages: []
     };
   },
 
@@ -66,8 +75,22 @@ export default {
     },
   },
 
+  created() {
+    this.initMessages();
+  },
+
+  watch: {
+    selectedChannel: 'initMessages'
+  },
+
   methods: {
     ...mapMutations('all', ['sendNewMessage', 'addMemberToChannel', 'kickMemberFromChannel', 'addKickVoteOrKickMember', 'leaveChannel', 'deleteChannel', 'joinChannel']),
+
+    initMessages() {
+      if (this.selectedChannel && this.selectedChannel.messages) {
+        this.visibleMessages = this.selectedChannel.messages.slice(-this.itemsPerPage);
+      }
+    },
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.user.nickName;
@@ -81,6 +104,22 @@ export default {
       else {
         this.sendMessage();
       }
+    },
+
+    loadMoreMessages() {
+      if (this.loading) return;
+      this.loading = true;
+
+      const currentVisibleCount = this.visibleMessages.length;
+      const totalMessages = this.selectedChannel.messages.length;
+      const start = Math.max(totalMessages - currentVisibleCount - this.itemsPerPage, 0);
+      const newMessages = this.selectedChannel.messages.slice(start, totalMessages - currentVisibleCount);
+
+      if (newMessages.length > 0) {
+        // This will cause a jump to the new batch of messages
+        this.visibleMessages = [...newMessages, ...this.visibleMessages];
+      }
+      this.loading = false;
     },
 
     sendMessage() {
