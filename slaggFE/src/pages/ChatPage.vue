@@ -60,6 +60,7 @@
 
 <script>
 import {mapGetters, mapMutations} from 'vuex';
+import {AppVisibility} from 'quasar';
 
 export default {
   data() {
@@ -78,7 +79,8 @@ export default {
       loggedUser: 'getLoggedUser',
       selectedChannel: 'getSelectedChannel',
       allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels'
+      allPublicChannels: 'getAllPublicChannels',
+      mentionsOnly: 'getMentionsOnly'
     }),
     filteredPublicChannels() {
       return this.allPublicChannels.filter(
@@ -112,6 +114,7 @@ export default {
     ]),
 
     initMessages() {
+      // TODO:: Add logic for logged user status for updating channel messages only while not offline
       if (this.selectedChannel && this.selectedChannel.messages) {
         this.visibleMessages = this.selectedChannel.messages.slice(-this.itemsPerPage);
       }
@@ -145,7 +148,12 @@ export default {
 
       const otherUsers = this.allUsers.filter(user => user.nickName !== this.loggedUser.user.nickName);
       const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-      const randomMessageContent = 'Hello from ' + randomUser.nickName;
+      const mentionLoggedUser = Math.random() < 0.5;
+
+      let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
+      if (mentionLoggedUser) {
+        randomMessageContent = `Hi @${this.loggedUser.user.nickName} how are you?`;
+      }
 
       const incomingMessage = {
         user: randomUser,
@@ -157,12 +165,21 @@ export default {
       this.fetchNewMessage(incomingMessage)
       this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
 
-      this.$q.notify({
-        message: `${randomUser.nickName} says: ${randomMessageContent}`,
-        color: 'info',
-        position: 'top',
-        timeout: 3000
-      });
+      // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS :)
+      // AS IT IS REQUIRED IN ASSIGNMENT
+
+      if (AppVisibility.appVisible) {
+        // Condition for message notifications
+        // TODO:: Add logic for logged user status
+        if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.user.nickName)) {
+          this.$q.notify({
+            message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
+            color: 'info',
+            position: 'top',
+            timeout: 3000
+          });
+        }
+      }
     },
 
     loadMoreMessages() {

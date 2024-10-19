@@ -10,6 +10,9 @@
           Slagg
         </q-toolbar-title>
 
+        <!-- TODO Add status dropdown -->
+
+        <q-toggle v-model="mentionsOnly" label="Mentions Only" @click="toggleMentionsOnly" color="positive" />
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
         <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
@@ -167,6 +170,7 @@ export default {
       isPrivate: false,
       inviteNickName: '',
       inviteError: '',
+      mentionsOnly: false
     };
   },
 
@@ -186,7 +190,18 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn', 'setSelectedChannel', 'createNewChannel', 'leaveChannel', 'deleteChannel', 'kickMemberFromChannel', 'addMemberToChannel', 'addKickVoteOrKickMember', 'joinChannel']),
+    ...mapMutations('all', [
+      'toggleIsUserLoggedIn',
+      'setSelectedChannel',
+      'createNewChannel',
+      'leaveChannel',
+      'deleteChannel',
+      'kickMemberFromChannel',
+      'addMemberToChannel',
+      'addKickVoteOrKickMember',
+      'joinChannel',
+      'setMentionsOnly'
+    ]),
 
     createChannel() {
       let payload = {
@@ -295,7 +310,12 @@ export default {
     logout() {
       this.toggleIsUserLoggedIn();
       this.$router.push('/signin/login');
-    }
+    },
+
+    toggleMentionsOnly() {
+      const currentValue = this.mentionsOnly;
+      this.setMentionsOnly(currentValue);
+    },
   },
 };
 </script>

@@ -120,6 +120,10 @@ const mutation: MutationTree<AllStateInterface> = {
       }
       this.kickMemberFromChannel(state, payload);
     }
+  },
+
+  setMentionsOnly(state, payload: boolean){
+    state.mentionsOnly = payload
   }
 };
 
