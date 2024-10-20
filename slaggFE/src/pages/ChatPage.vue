@@ -26,6 +26,7 @@
               :text="[message.content]"
               :sent="isLoggedUser(message)"
               :stamp="new Date(message.timestamp).toLocaleString()"
+              :bg-color="message.content.includes('@' + loggedUser.user.nickName) ? 'deep-orange-4' : ''"
             />
           </q-infinite-scroll>
         </div>

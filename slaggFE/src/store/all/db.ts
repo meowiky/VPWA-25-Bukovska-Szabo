@@ -94,7 +94,7 @@ export const message_db = {
       user: {}
     } as MessageStateInterface,
     {
-      content: 'Thanks, Lucia!',
+      content: 'Thanks, @lulu !',
       timestamp: new Date('2020-01-03T10:05:00.000Z'),
       user: {}
     } as MessageStateInterface,
