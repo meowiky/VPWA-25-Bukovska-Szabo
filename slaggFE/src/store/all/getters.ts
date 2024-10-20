@@ -20,7 +20,7 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   },
   getMentionsOnly (state) {
     return state.mentionsOnly
-  }
+  },
 };
 
 export default getters;

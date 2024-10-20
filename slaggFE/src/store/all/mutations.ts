@@ -124,6 +124,10 @@ const mutation: MutationTree<AllStateInterface> = {
 
   setMentionsOnly(state, payload: boolean){
     state.mentionsOnly = payload
+  },
+
+  setUserStatus(state, payload: 'online' | 'offline' | 'DND') {
+    state.loggedUser.user.status = payload
   }
 };
 

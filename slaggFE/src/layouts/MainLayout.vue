@@ -10,7 +10,17 @@
           Slagg
         </q-toolbar-title>
 
-        <!-- TODO Add status dropdown -->
+        <q-select
+          v-model="currentUserStatus"
+          :options="statusOptions"
+          transition-show="jump-up"
+          transition-hide="jump-up"
+          filled
+          outlined
+          dense
+          color="primary"
+          class="user-status-selector"
+        />
 
         <q-toggle v-model="mentionsOnly" label="Mentions Only" @click="toggleMentionsOnly" color="positive" />
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
@@ -170,8 +180,20 @@ export default {
       isPrivate: false,
       inviteNickName: '',
       inviteError: '',
-      mentionsOnly: false
+      mentionsOnly: false,
+      currentUserStatus: 'Online',
+      statusOptions: [
+        { label: 'Online', value: 'online' },
+        { label: 'Offline', value: 'offline' },
+        { label: 'DND', value: 'DND' },
+      ],
     };
+  },
+
+  watch: {
+    currentUserStatus(status) {
+      this.updateUserStatus(status.value)
+    }
   },
 
   computed: {
@@ -200,7 +222,8 @@ export default {
       'addMemberToChannel',
       'addKickVoteOrKickMember',
       'joinChannel',
-      'setMentionsOnly'
+      'setMentionsOnly',
+      'setUserStatus'
     ]),
 
     createChannel() {
@@ -316,6 +339,10 @@ export default {
       const currentValue = this.mentionsOnly;
       this.setMentionsOnly(currentValue);
     },
+
+    updateUserStatus (value) {
+      this.setUserStatus(value);
+    }
   },
 };
 </script>
@@ -325,4 +352,13 @@ export default {
   background-color: #E0F7FA;
   border-left: 4px solid #00ACC1;
 }
+
+.user-status-selector {
+  width: 100px;
+}
+
+:deep(.user-status-selector .q-field__native), :deep(.user-status-selector .q-icon) {
+  color: white !important;
+}
+
 </style>

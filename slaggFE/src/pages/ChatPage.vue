@@ -168,6 +168,8 @@ export default {
       // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS :)
       // AS IT IS REQUIRED IN ASSIGNMENT
 
+      console.log(this.loggedUser.user.status) // TODO:: Remove debug log
+
       if (AppVisibility.appVisible) {
         // Condition for message notifications
         // TODO:: Add logic for logged user status
