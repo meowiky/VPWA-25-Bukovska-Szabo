@@ -31,6 +31,13 @@
           </q-infinite-scroll>
         </div>
 
+        <div v-if="typingMember" class="typing-banner">
+          <q-banner type="info" dense>
+            <q-icon name="chat" />
+            {{ typingMember.nickName }} is typing: "{{ fakeTypingMessage }}"
+          </q-banner>
+        </div>
+
         <div class="bottom-section">
           <div v-if="displayedError" class="error-banner">
             <q-banner type="negative" dense>
@@ -58,7 +65,6 @@
   </div>
 </template>
 
-
 <script>
 import {mapGetters, mapMutations} from 'vuex';
 import {AppVisibility} from 'quasar';
@@ -71,7 +77,9 @@ export default {
       loading: false,
       itemsPerPage: 20,
       visibleMessages: [],
-      simulateIncomingMessages: false
+      simulateIncomingMessages: false,
+      typingMember: null,
+      fakeTypingMessage: 'This is the fake typing message.'
     };
   },
 
@@ -96,10 +104,16 @@ export default {
 
   created() {
     this.initMessages();
+    this.simulateTypingMember();
   },
 
   watch: {
-    selectedChannel: 'initMessages',
+    selectedChannel(newChannel, oldChannel) {
+      if (newChannel !== oldChannel) {
+        this.initMessages();
+        this.simulateTypingMember();
+      }
+    },
     'loggedUser.user.status': function (newStatus) {
       if (newStatus !== 'offline') {
         this.initMessages();
@@ -219,6 +233,16 @@ export default {
       this.newMessage = '';
     },
 
+    simulateTypingMember() {
+      const otherMembers = this.selectedChannel.members.filter(
+        user => user.nickName !== this.loggedUser.user.nickName
+      );
+      if (otherMembers.length === 0) return;
+
+      this.typingMember = otherMembers[Math.floor(Math.random() * otherMembers.length)];
+      this.showTypingBanner = true;
+    },
+
     handleCommand(commandString) {
       const [command, ...args] = commandString.split(' ');
 
@@ -247,14 +271,14 @@ export default {
             const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
             if (!userToInvite) {
               this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
-              return;
+              break;
             }
 
             const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === args[0]);
 
             if (isAlreadyMember) {
               this.displayedError = `User '${args[0]}' is already a member of this channel.`;
-              return;
+              break;
             }
             let payload = {
               member: userToInvite,
@@ -276,6 +300,7 @@ export default {
           if (this.loggedUser.user === this.selectedChannel.admin) {
             if (!memberToKick) {
               this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              break;
             }
             let payload = {
               member: memberToKick,
@@ -287,11 +312,13 @@ export default {
             this.displayedError = 'You are not the admin of this channel, so you will only vote to kick a member.';
             if (!memberToKick) {
               this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              break;
             }
 
             const voteData = this.selectedChannel.kickVotes.find((vote) => vote.member.nickName === args[0]);
             if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName)) {
               this.displayedError = `You have already voted to kick a user with nickname '${args[0]}' out.`;
+              break;
             }
             else {
               let payload = {
@@ -409,5 +436,12 @@ export default {
   justify-content: center;
 }
 
+.typing-notification {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background-color: white;
+  padding: 10px;
+  text-align: center;
+}
 </style>
-
