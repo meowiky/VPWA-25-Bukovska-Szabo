@@ -89,7 +89,7 @@ export default {
     },
 
     messagesCompositeKey() {
-      return `${this.selectedChannel.name}-${this.visibleMessages.length}`;
+      return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.user.status}`;
     }
   },
 
@@ -99,6 +99,11 @@ export default {
 
   watch: {
     selectedChannel: 'initMessages',
+    'loggedUser.user.status': function (newStatus) {
+      if (newStatus !== 'offline') {
+        this.initMessages();
+      }
+    },
   },
 
   methods: {
@@ -114,7 +119,6 @@ export default {
     ]),
 
     initMessages() {
-      // TODO:: Add logic for logged user status for updating channel messages only while not offline
       if (this.selectedChannel && this.selectedChannel.messages) {
         this.visibleMessages = this.selectedChannel.messages.slice(-this.itemsPerPage);
       }
@@ -163,16 +167,19 @@ export default {
       };
 
       this.fetchNewMessage(incomingMessage)
+
+      if (this.loggedUser.user.status === 'offline') {
+        return;
+      }
       this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
 
-      // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS :)
-      // AS IT IS REQUIRED IN ASSIGNMENT
+      // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
-      console.log(this.loggedUser.user.status) // TODO:: Remove debug log
+      if (this.loggedUser.user.status === 'DND') {
+        return;
+      }
 
       if (AppVisibility.appVisible) {
-        // Condition for message notifications
-        // TODO:: Add logic for logged user status
         if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.user.nickName)) {
           this.$q.notify({
             message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
