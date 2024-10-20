@@ -149,8 +149,7 @@ export default {
     },
 
     simulateIncomingMessage() {
-
-      const otherUsers = this.allUsers.filter(user => user.nickName !== this.loggedUser.user.nickName);
+      const otherUsers = this.selectedChannel.members.filter(user => user.nickName !== this.loggedUser.user.nickName);
       const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
       const mentionLoggedUser = Math.random() < 0.5;
 
