@@ -80,7 +80,7 @@
             <q-item-section>
               <q-item-label>{{ member.nickName }}</q-item-label>
               <q-item-label caption>
-                {{ member === selectedChannel.admin ? 'Admin' : 'Member' }}
+                {{ member === selectedChannel.admin ? 'Admin' : 'Member' }} - Status: {{ member.status }}
               </q-item-label>
             </q-item-section>
 
