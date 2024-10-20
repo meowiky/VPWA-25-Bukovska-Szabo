@@ -3,7 +3,7 @@
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title>
+        <q-toolbar-title v-if="!isMobile">
           <q-avatar>
             <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
           </q-avatar>
@@ -187,7 +187,17 @@ export default {
         { label: 'DND', value: 'DND' },
       ],
       rightDrawerOpenLocal: false,
+      isMobile: false,
     };
+  },
+
+  mounted() {
+    this.updateIsMobile();
+    window.addEventListener('resize', this.updateIsMobile);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.updateIsMobile);
   },
 
   watch: {
@@ -230,6 +240,10 @@ export default {
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
+
+    updateIsMobile() {
+      this.isMobile = window.innerWidth <= 600;
+    },
 
     createChannel() {
       let payload = {
