@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-page">
+  <div class="chat-page" >
     <div v-if="!selectedChannel.name" class="select-channel-message">
       <q-card class="q-pa-md">
         <q-card-section>
@@ -116,7 +116,8 @@ export default {
       'leaveChannel',
       'deleteChannel',
       'joinChannel',
-      'fetchNewMessage'
+      'fetchNewMessage',
+      'toggleRightDrawerOpen'
     ]),
 
     initMessages() {
@@ -317,6 +318,10 @@ export default {
           else {
             this.displayedError = 'You are not admin of this channel, so you can not delete it.';
           }
+          break;
+
+        case '/list':
+          this.toggleRightDrawerOpen();
           break;
 
         default:

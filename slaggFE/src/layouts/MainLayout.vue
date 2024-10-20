@@ -72,7 +72,7 @@
       </q-list>
     </q-drawer>
 
-    <q-drawer show-if-above v-model="rightDrawerOpen" side="right" bordered>
+    <q-drawer show-if-above v-model="rightDrawerOpenLocal" @update:model-value="toggleRightDrawer" side="right" bordered>
       <q-list>
         <q-item-label header>Channel Members</q-item-label>
         <template v-if="selectedChannel && selectedChannel.members.length > 0">
@@ -175,7 +175,6 @@ export default {
       createChannelDialog: false,
       publicChannelsDialog: false,
       leftDrawerOpen: true,
-      rightDrawerOpen: false,
       newChannelName: '',
       isPrivate: false,
       inviteNickName: '',
@@ -187,12 +186,16 @@ export default {
         { label: 'Offline', value: 'offline' },
         { label: 'DND', value: 'DND' },
       ],
+      rightDrawerOpenLocal: false,
     };
   },
 
   watch: {
     currentUserStatus(status) {
       this.updateUserStatus(status.value)
+    },
+    rightDrawerOpen(newVal) {
+      this.rightDrawerOpenLocal = newVal;
     }
   },
 
@@ -202,7 +205,8 @@ export default {
       selectedChannel: 'getSelectedChannel',
       isUserLoggedIn: 'isUserLoggedIn',
       allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels'
+      allPublicChannels: 'getAllPublicChannels',
+      rightDrawerOpen: 'getRightDrawerOpen',
     }),
     filteredPublicChannels() {
       return this.allPublicChannels.filter(
@@ -223,7 +227,8 @@ export default {
       'addKickVoteOrKickMember',
       'joinChannel',
       'setMentionsOnly',
-      'setUserStatus'
+      'setUserStatus',
+      'toggleRightDrawerOpen'
     ]),
 
     createChannel() {
@@ -248,7 +253,7 @@ export default {
     },
 
     toggleRightDrawer() {
-      this.rightDrawerOpen = !this.rightDrawerOpen;
+      this.toggleRightDrawerOpen();
     },
 
     openCreateChannelDialog() {

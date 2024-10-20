@@ -42,6 +42,7 @@ export interface AllStateInterface {
   selectedChannel: ChannelStateInterface;
   usersAsMemberInterface: MemberStateInterface[];
   publicChannels: ChannelStateInterface[];
+  rightDrawerOpen: boolean;
 }
 
 function state(): AllStateInterface {
@@ -74,7 +75,8 @@ function state(): AllStateInterface {
       kickVotes: []
     },
     usersAsMemberInterface: [],
-    publicChannels: []
+    publicChannels: [],
+    rightDrawerOpen: true,
   };
 }
 

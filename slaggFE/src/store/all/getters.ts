@@ -21,6 +21,9 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   getMentionsOnly (state) {
     return state.mentionsOnly
   },
+  getRightDrawerOpen (state) {
+    return state.rightDrawerOpen
+  }
 };
 
 export default getters;

@@ -9,6 +9,10 @@ const mutation: MutationTree<AllStateInterface> = {
     state.isUserLoggedIn = !state.isUserLoggedIn;
   },
 
+  toggleRightDrawerOpen(state) {
+    state.rightDrawerOpen = !state.rightDrawerOpen;
+  },
+
   setSelectedChannel(state, payload: ChannelStateInterface) {
     state.selectedChannel = payload;
   },
