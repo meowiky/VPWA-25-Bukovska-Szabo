@@ -209,9 +209,11 @@ export default {
       rightDrawerOpen: 'getRightDrawerOpen',
     }),
     filteredPublicChannels() {
-      return this.allPublicChannels.filter(
-        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
-      );
+      return this.allPublicChannels;
+      // TODO:: Fix filtering public channels from API
+      // return this.allPublicChannels.filter(
+      //   channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+      // );
     },
   },
 

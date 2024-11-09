@@ -41,7 +41,7 @@ const mutation: MutationTree<AllStateInterface> = {
       kickVotes: []
     }
     dbConn.createNewChannel(newChannel);
-    state.loggedUser.channels.push(newChannel)
+    // state.loggedUser.channels.push(newChannel) // TODO:: Push to pivot table
   },
 
   leaveChannel(state, payload: ChannelStateInterface) {
@@ -54,7 +54,7 @@ const mutation: MutationTree<AllStateInterface> = {
 
   joinChannel(state, payload: ChannelStateInterface){
     dbConn.addUserToChannel(state.loggedUser.user, payload);
-    state.loggedUser.channels.push(payload)
+    // state.loggedUser.channels.push(payload) // TODO:: Push to pivot table
   },
 
   deleteChannel(state, payload: ChannelStateInterface) {
@@ -79,7 +79,7 @@ const mutation: MutationTree<AllStateInterface> = {
     dbConn.saveMessage(newMessage, payload.channel);
     const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
     if (channel) {
-      channel.messages.push(newMessage)
+      channel.messages.push(newMessage) // TODO push to messages table only
     }
   },
 
@@ -92,7 +92,7 @@ const mutation: MutationTree<AllStateInterface> = {
     dbConn.saveMessage(newMessage, payload.channel);
     const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
     if (channel) {
-      channel.messages.push(newMessage)
+      channel.messages.push(newMessage) // TODO push to messages table only
     }
   },
 
@@ -108,13 +108,13 @@ const mutation: MutationTree<AllStateInterface> = {
     const kickVoteEntry = payload.channel.kickVotes.find(vote => vote.member.nickName === payload.member.nickName);
 
     if (kickVoteEntry) {
-      kickVoteEntry.votes.push({ voter: state.loggedUser.user });
+      kickVoteEntry.votes.push({ voter: state.loggedUser.user }); // TODO:: Add to kickVotes table and push to it
     }
     else {
       payload.channel.kickVotes.push({
         member: payload.member,
         votes: [{ voter: state.loggedUser.user }]
-      });
+      });   // TODO:: Add to kickVotes table and push to it
     }
 
     if (kickVoteEntry && kickVoteEntry.votes.length >= 3) {

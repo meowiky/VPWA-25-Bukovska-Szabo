@@ -77,7 +77,7 @@ router
       }
 
       // Add user to the channel (assuming user is stored in the User model)
-      const userInstance = await User.findByOrFail('nickName', user.nickName)
+      const userInstance = await User.findByOrFail('nickname', user.nickName)
       await channel.related('users').attach([userInstance.id])
       return { message: 'User added to channel', channel }
     })
@@ -92,14 +92,14 @@ router
       }
 
       // Remove user from the channel
-      const userInstance = await User.findByOrFail('nickName', user.nickName)
+      const userInstance = await User.findByOrFail('nickname', user.nickname)
       await channel.related('users').detach([userInstance.id])
       return { message: 'User removed from channel', channel }
     })
 
     // Get all public channels
     router.get('/channels/public', async () => {
-      return await Channel.query().where('isPrivate', false).exec()
+      return await Channel.query().where('visibility', 'public').exec()
     })
 
     // Get messages
@@ -149,7 +149,7 @@ router
 
     router.get('/users/members', async ({ request }) => {
       const { loggedUser } = request.all()
-      return await User.query().where('nickName', '!=', loggedUser.nickName).exec()
+      return await User.query().where('nickname', '!=', loggedUser.nickName).exec()
     })
   })
   .prefix('/api')
