@@ -1,68 +1,109 @@
-import {ChannelStateInterface, MemberStateInterface, MessageStateInterface, UserStateInterface} from './state';
-import * as db from 'src/store/all/db';
+import axios from 'axios'
+import { ChannelStateInterface, MemberStateInterface, MessageStateInterface, UserStateInterface } from './state'
 
-window.db = function () { return db };
+// TODO:: Find better approach
+axios.defaults.baseURL = 'http://localhost:3333' // Adonis URL
 
-export function getChannel(name: string) {
-  return db.channel_db.channel.find(ch => ch.name === name)
+async function getChannel(name: string): Promise<ChannelStateInterface | undefined> {
+  try {
+    const response = await axios.get(`/api/channels/${name}`)
+    return response.data || undefined
+  } catch (error) {
+    console.error('Error fetching channel:', error)
+    return undefined
+  }
 }
 
-export function registerNewUser(user: UserStateInterface) {
-    db.users_db.users.push(user)
+async function registerNewUser(user: UserStateInterface): Promise<void> {
+  try {
+    await axios.post('/api/users', user)
+  } catch (error) {
+    console.error('Error registering new user:', error)
+  }
 }
 
-export function createNewChannel(channel: ChannelStateInterface) {
-    db.channel_db.channel.push(channel);
+async function createNewChannel(channel: ChannelStateInterface): Promise<void> {
+  try {
+    await axios.post('/api/channels', channel)
+  } catch (error) {
+    console.error('Error creating new channel:', error)
+  }
 }
 
-export function deleteChannel(channel: ChannelStateInterface) {
-    db.channel_db.channel = db.channel_db.channel.filter(ch => ch.name !== channel.name);
+async function deleteChannel(channel: ChannelStateInterface): Promise<void> {
+  try {
+    await axios.delete(`/api/channels/${channel.name}`)
+  } catch (error) {
+    console.error('Error deleting channel:', error)
+  }
 }
 
-export function removeUserFromChannel(user: MemberStateInterface, channel: ChannelStateInterface) {
-  const ch = db.channel_db.channel.find(ch => ch.name === channel.name);
-  if (!ch) return
-
-  ch.members = ch.members.filter(u => u.nickName !== user.nickName);
-
-  const usr = db.users_db.users.find(u => u.user === user)
-  if (!usr) return
-
-  usr.channels = usr.channels.filter(c => c.name !== channel.name);
+async function removeUserFromChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
+  try {
+    await axios.post(`/api/channels/${channel.name}/remove-user`, { user })
+  } catch (error) {
+    console.error('Error removing user from channel:', error)
+  }
 }
 
-export function addUserToChannel(user: MemberStateInterface, channel: ChannelStateInterface) {
-    const ch = db.channel_db.channel.find(ch => ch.name === channel.name);
-    if (!ch) return
-
-    ch.members.push(user)
-
-    const usr = db.users_db.users.find(u => u.user === user)
-    if (!usr) return
-
-    usr.channels.push(channel)
+async function addUserToChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
+  try {
+    await axios.post(`/api/channels/${channel.name}/add-user`, { user })
+  } catch (error) {
+    console.error('Error adding user to channel:', error)
+  }
 }
 
-export function saveMessage(message: MessageStateInterface, channel: ChannelStateInterface) {
-  return [message, channel]
+async function saveMessage(message: MessageStateInterface, channel: ChannelStateInterface): Promise<[MessageStateInterface, ChannelStateInterface]> {
+  try {
+    const response = await axios.post('/api/messages', { message, channelName: channel.name })  // Use channel.name
+    return [response.data.message, response.data.channel]
+  } catch (error) {
+    console.error('Error saving message:', error)
+    return [message, channel]
+  }
 }
 
-export function verifyUserCredentials(email: string, password: string) {
-  const user = db.users_db.users.find(u => u.email === email);
-  if (!user) { return false }
 
-  if (user.password !== password) { return false }
-  return user
+async function verifyUserCredentials(email: string, password: string): Promise<UserStateInterface | false> {
+  try {
+    const response = await axios.post('/api/login', { email, password })
+    return response.data || false
+  } catch (error) {
+    console.error('Error verifying credentials:', error)
+    return false
+  }
 }
 
-export function getAllUsersAsMemberInterface(loggedUser: UserStateInterface): MemberStateInterface[] {
-  const usersAsMembers: MemberStateInterface[] = db.users_db.users
-    .filter(u => u.user.nickName !== loggedUser.user.nickName)
-    .map(u => u.user as MemberStateInterface);
-
-  return usersAsMembers;
+async function getAllUsersAsMemberInterface(loggedUser: UserStateInterface): Promise<MemberStateInterface[]> {
+  try {
+    const response = await axios.get('/api/users/members', { params: { loggedUser } })
+    return response.data || []
+  } catch (error) {
+    console.error('Error getting users as members:', error)
+    return []
+  }
 }
 
-export function getAllPublicChannels(): ChannelStateInterface[] {
-  return db.channel_db.channel.filter(ch => !ch.isPrivate);
+async function getAllPublicChannels(): Promise<ChannelStateInterface[]> {
+  try {
+    const response = await axios.get('/api/channels/public')
+    return response.data || []
+  } catch (error) {
+    console.error('Error fetching public channels:', error)
+    return []
+  }
+}
+
+export {
+  getChannel,
+  registerNewUser,
+  createNewChannel,
+  deleteChannel,
+  removeUserFromChannel,
+  addUserToChannel,
+  saveMessage,
+  verifyUserCredentials,
+  getAllUsersAsMemberInterface,
+  getAllPublicChannels
 }

@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm'
+import { BaseModel, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
 import Channel from './channel.ts'
 import Message from './message.ts'
 import * as relations from '@adonisjs/lucid/types/relations'
@@ -32,9 +32,9 @@ export default class User extends BaseModel {
   @column.dateTime()
   public lastActiveState!: DateTime
 
-  @hasMany(() => Channel)
-  public channels!: relations.HasMany<typeof Channel>
-
   @hasMany(() => Message)
   public messages!: relations.HasMany<typeof Message>
+
+  @manyToMany(() => Channel)
+  public channels!: relations.ManyToMany<typeof Channel>
 }
