@@ -21,7 +21,7 @@ export default class User extends BaseModel {
   public email!: string
 
   @column()
-  public password!: string
+  public password!: string // TODO:: encrypt
 
   @column()
   public state!: string
