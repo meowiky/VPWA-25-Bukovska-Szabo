@@ -22,15 +22,21 @@ async function registerNewUser(nickName: string, email: string, password: string
   }
 }
 
-// todo
-async function createNewChannel(channel: ChannelStateInterface): Promise<void> {
+async function createNewChannel(channel : {
+      name: string,
+      isPrivate: boolean,
+    }, token: string): Promise<void> {
   const data = {
     name: channel.name,
     visibility: channel.isPrivate ? 'private' : 'public'
   };
 
   try {
-    await axios.post('/api/channels', data);
+    await axios.post('/api/createChannel', data, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
   } catch (error) {
     console.error('Error creating new channel:', error);
   }

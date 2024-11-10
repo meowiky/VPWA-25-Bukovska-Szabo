@@ -70,8 +70,28 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
       console.error('logout error:', error);
       return false;
     }
-  }
+  },
 
-};
+  async reloadData({ commit }: ActionContext<AllStateInterface, StateInterface>, token: string) {
+    const data = await dbConn.getLoggedUser(token);
+    if (data) {
+      const { user, allPublicChannels, allUsers } = data;
+      commit('setLoggedUser', user);
+      commit('setAllPublicChannels', allPublicChannels);
+      commit('setOtherUsers', allUsers);
+
+      return user;
+    }
+  },
+
+  async createNewChannel({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {name: string, isPrivate: boolean, token: string}){
+    const newChannel = {
+      name: payload.name,
+      isPrivate: payload.isPrivate,
+    }
+    await dbConn.createNewChannel(newChannel, payload.token);
+    await dispatch('reloadData', payload.token);
+  },
+}
 
 export default actions;

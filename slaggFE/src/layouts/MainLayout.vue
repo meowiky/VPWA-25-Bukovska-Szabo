@@ -227,7 +227,6 @@ export default {
     ...mapMutations('all', [
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
-      'createNewChannel',
       'leaveChannel',
       'deleteChannel',
       'kickMemberFromChannel',
@@ -238,14 +237,15 @@ export default {
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel']),
 
-    createChannel() {
+    async createChannel() {
       let payload = {
         name: this.newChannelName,
-        isPrivate: this.isPrivate
+        isPrivate: this.isPrivate,
+        token: this.token
       }
-      this.createNewChannel(payload);
+      await this.createNewChannel(payload);
       this.createChannelDialog = false;
     },
 

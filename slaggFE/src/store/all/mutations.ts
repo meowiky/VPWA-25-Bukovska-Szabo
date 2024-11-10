@@ -35,19 +35,6 @@ const mutation: MutationTree<AllStateInterface> = {
     state.publicChannels = payload;
   },
 
-  createNewChannel(state, payload: {name: string, isPrivate: boolean}){
-    const newChannel: ChannelStateInterface = {
-      name: payload.name,
-      isPrivate: payload.isPrivate,
-      admin: state.loggedUser.user,
-      members: [state.loggedUser.user],
-      messages: [],
-      kickVotes: []
-    }
-    dbConn.createNewChannel(newChannel);
-    // state.loggedUser.channels.push(newChannel) // TODO:: Push to pivot table
-  },
-
   leaveChannel(state, payload: ChannelStateInterface) {
     state.loggedUser.channels = state.loggedUser.channels.filter(channel => channel !== payload);
     dbConn.removeUserFromChannel(state.loggedUser.user, payload)
