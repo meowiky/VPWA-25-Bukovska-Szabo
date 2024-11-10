@@ -42,10 +42,16 @@ async function createNewChannel(channel : {
   }
 }
 
-// todo
-async function deleteChannel(channel: ChannelStateInterface): Promise<void> {
+async function deleteChannel(channel: string, token: string): Promise<void> {
   try {
-    await axios.delete(`/api/channels/${channel.name}`);
+    await axios.delete('/api/deleteChannel', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      data: {
+        name: channel
+      }
+    });
   } catch (error) {
     console.error('Error deleting channel:', error);
   }

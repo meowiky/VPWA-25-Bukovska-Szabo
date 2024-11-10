@@ -228,7 +228,6 @@ export default {
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
       'leaveChannel',
-      'deleteChannel',
       'kickMemberFromChannel',
       'addMemberToChannel',
       'addKickVoteOrKickMember',
@@ -237,7 +236,7 @@ export default {
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel']),
 
     async createChannel() {
       let payload = {
@@ -254,7 +253,11 @@ export default {
     },
 
     deleteChannelAction(channel) {
-      this.deleteChannel(channel);
+      let payload = {
+        name: channel.name,
+        token: this.token
+      }
+      this.deleteChannel(payload);
     },
 
     toggleLeftDrawer() {

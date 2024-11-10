@@ -13,6 +13,10 @@ router
       .post('/createChannel', [UserController, 'createNewChannel'])
       .as('user.createNewChannel')
       .use(middleware.auth())
+    router
+      .delete('deleteChannel', [UserController, 'deleteChannel'])
+      .as('user.deleteChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 
