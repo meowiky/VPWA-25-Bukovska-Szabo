@@ -21,6 +21,10 @@ router
       .delete('/leaveChannel', [UserController, 'leaveChannel'])
       .as('user.leaveChannel')
       .use(middleware.auth())
+    router
+      .delete('/kickUserFromChannel', [UserController, 'kickUserFromChannel'])
+      .as('user.kickUserFromChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

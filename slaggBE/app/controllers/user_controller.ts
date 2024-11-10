@@ -1,4 +1,5 @@
 import Channel from '#models/channel'
+import User from '#models/user'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class UserController {
@@ -101,6 +102,72 @@ export default class UserController {
       console.error('Error leaving channel:', error)
       return response.internalServerError({
         message: 'An error occurred while attempting to leave the channel.',
+      })
+    }
+  }
+
+  async kickUserFromChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+
+    const { channelName, userNickName } = request.only(['channelName', 'userNickName'])
+
+    try {
+      const channel = await Channel.query()
+        .where('name', channelName)
+        .preload('admin')
+        .preload('users', (query) => {
+          query.where('nickname', userNickName)
+        })
+        .first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${channelName}' does not exist.`,
+        })
+      }
+
+      if (channel.adminId !== user.id) {
+        return response.unauthorized({
+          message: 'Only the channel admin can kick members.',
+        })
+      }
+
+      if (user.nickname === userNickName) {
+        return response.badRequest({
+          message: 'You cannot kick yourself from the channel.',
+        })
+      }
+
+      const userToKick = await User.query().where('nickname', userNickName).first()
+
+      if (!userToKick) {
+        return response.notFound({
+          message: `User with nickname '${userNickName}' does not exist.`,
+        })
+      }
+
+      const isUserInChannel = await channel
+        .related('users')
+        .query()
+        .where('users.id', userToKick.id)
+        .first()
+
+      if (!isUserInChannel) {
+        return response.notFound({
+          message: `User '${userNickName}' is not a member of the channel.`,
+        })
+      }
+
+      await channel.related('users').detach([userToKick.id])
+
+      return response.ok({
+        message: `User '${userNickName}' has been kicked from the channel '${channelName}'.`,
+      })
+    } catch (error) {
+      console.error('Error kicking user from channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to kick the user from the channel.',
+        error: error.message,
       })
     }
   }

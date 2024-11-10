@@ -85,7 +85,7 @@
             </q-item-section>
 
             <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
-              <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickName === this.selectedChannel.admin.nickName" @click="kickMember(member)" />
+              <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickName === this.selectedChannel.admin.nickName" @click="kickMember(member.nickName)" />
               <!-- <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge> -->
             </q-item-section>
@@ -227,7 +227,6 @@ export default {
     ...mapMutations('all', [
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
-      'kickMemberFromChannel',
       'addMemberToChannel',
       'addKickVoteOrKickMember',
       'joinChannel',
@@ -235,7 +234,7 @@ export default {
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel']),
 
     async createChannel() {
       let payload = {
@@ -288,8 +287,15 @@ export default {
       this.publicChannelsDialog = false;
     },
 
-    kickMember(member) {
-      console.log(member)
+    async kickMember(member) {
+      let payload = {
+        channel: this.selectedChannel.name,
+        token: this.token,
+        user: member
+      };
+      await this.kickUserFromChannel(payload)
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
+      this.selectChannel(ch)
     },
 
     inviteUser() {

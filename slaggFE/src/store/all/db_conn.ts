@@ -71,6 +71,22 @@ async function leaveChannel(channel: string, token: string): Promise<void> {
   }
 }
 
+async function kickUserFromChannel(channel: string, token: string, user: string): Promise<void> {
+  try {
+    await axios.delete('/api/kickUserFromChannel', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      data: {
+        channelName: channel,
+        userNickName: user
+      }
+    });
+  } catch (error) {
+    console.error('Error leaving channel:', error);
+  }
+}
+
 // todo
 async function removeUserFromChannel(user: object, channel: object): Promise<void> {
   try {
@@ -159,5 +175,6 @@ export {
   login,
   getLoggedUser,
   logout,
-  leaveChannel
+  leaveChannel,
+  kickUserFromChannel
 }
