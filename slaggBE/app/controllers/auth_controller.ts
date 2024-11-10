@@ -36,7 +36,7 @@ export default class AuthController {
       query.preload('users').preload('admin')
     })
 
-    const allPublicChannels = await Channel.query().where('visibility', 'public')
+    const allPublicChannels = await Channel.query().where('is_private', false)
 
     const allUsers = await User.query()
       .whereNot('id', authenticatedUser.id)
@@ -55,7 +55,7 @@ export default class AuthController {
         channels: authenticatedUser.channels.map((channel) => ({
           id: channel.id,
           name: channel.name,
-          visibility: channel.visibility,
+          isPrivate: channel.isPrivate,
           lastActive: channel.lastActive,
           admin: channel.admin
             ? {
@@ -75,7 +75,7 @@ export default class AuthController {
       allPublicChannels: allPublicChannels.map((channel) => ({
         id: channel.id,
         name: channel.name,
-        visibility: channel.visibility,
+        isPrivate: channel.isPrivate,
         lastActive: channel.lastActive,
       })),
       allUsers: allUsers.map((user) => ({

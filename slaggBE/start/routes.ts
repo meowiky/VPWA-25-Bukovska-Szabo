@@ -25,6 +25,10 @@ router
       .delete('/kickUserFromChannel', [UserController, 'kickUserFromChannel'])
       .as('user.kickUserFromChannel')
       .use(middleware.auth())
+    router
+      .post('/addUserToChannel', [UserController, 'addUserToChannel'])
+      .as('user.addUserToChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

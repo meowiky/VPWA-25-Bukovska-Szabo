@@ -11,8 +11,8 @@ export default class Channel extends BaseModel {
   @column()
   public name!: string
 
-  @column()
-  public visibility!: string
+  @column({ columnName: 'is_private' })
+  public isPrivate!: boolean
 
   @column.dateTime()
   public lastActive!: DateTime

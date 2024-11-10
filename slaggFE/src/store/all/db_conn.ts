@@ -27,7 +27,7 @@ async function createNewChannel(channel : {
     }, token: string): Promise<void> {
   const data = {
     name: channel.name,
-    visibility: channel.isPrivate ? 'private' : 'public'
+    isPrivate: channel.isPrivate
   };
 
   try {
@@ -87,19 +87,21 @@ async function kickUserFromChannel(channel: string, token: string, user: string)
   }
 }
 
-// todo
-async function removeUserFromChannel(user: object, channel: object): Promise<void> {
+async function addUserToChannel(channel: string, token: string, user: string): Promise<void> {
   try {
-    await axios.post(`/api/channels/${channel}/remove-user`, { nickname: user });
-  } catch (error) {
-    console.error('Error removing user from channel:', error);
-  }
-}
-
-// todo
-async function addUserToChannel(user: object, channel: object): Promise<void> {
-  try {
-    await axios.post(`/api/channels/${channel}/add-user`, { user: { nickname: user } });
+    await axios.post(
+      '/api/addUserToChannel',
+      {
+        channelName: channel,
+        userNickName: user
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   } catch (error) {
     console.error('Error adding user to channel:', error);
   }
@@ -169,7 +171,6 @@ export {
   registerNewUser,
   createNewChannel,
   deleteChannel,
-  removeUserFromChannel,
   addUserToChannel,
   saveMessage,
   login,

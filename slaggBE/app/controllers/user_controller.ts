@@ -7,11 +7,11 @@ export default class UserController {
     const user = auth.user!
 
     try {
-      const { name, visibility } = request.only(['name', 'visibility'])
+      const { name, isPrivate } = request.only(['name', 'isPrivate'])
 
       const channel = await Channel.create({
         name,
-        visibility,
+        isPrivate,
         adminId: user.id,
       })
       await channel.related('users').attach([user.id])
@@ -167,6 +167,59 @@ export default class UserController {
       console.error('Error kicking user from channel:', error)
       return response.internalServerError({
         message: 'An error occurred while trying to kick the user from the channel.',
+        error: error.message,
+      })
+    }
+  }
+
+  async addUserToChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { channelName, userNickName } = request.only(['channelName', 'userNickName'])
+    console.log(channelName, userNickName)
+
+    try {
+      const channel = await Channel.query().where('name', channelName).preload('admin').first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${channelName}' does not exist.`,
+        })
+      }
+
+      if (channel.isPrivate && channel.adminId !== user.id) {
+        return response.unauthorized({
+          message: 'Only the admin can add users to a private channel.',
+        })
+      }
+
+      const userToAdd = await User.query().where('nickname', userNickName).first()
+
+      if (!userToAdd) {
+        return response.notFound({
+          message: `User with nickname '${userNickName}' does not exist.`,
+        })
+      }
+
+      const isUserAlreadyInChannel = await channel
+        .related('users')
+        .query()
+        .where('users.id', userToAdd.id)
+        .first()
+      if (isUserAlreadyInChannel) {
+        return response.badRequest({
+          message: `User '${userNickName}' is already a member of the channel '${channelName}'.`,
+        })
+      }
+
+      await channel.related('users').attach([userToAdd.id])
+
+      return response.ok({
+        message: `User '${userNickName}' has been added to the channel '${channelName}'.`,
+      })
+    } catch (error) {
+      console.error('Error adding user to channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to add the user to the channel.',
         error: error.message,
       })
     }

@@ -227,14 +227,13 @@ export default {
     ...mapMutations('all', [
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
-      'addMemberToChannel',
       'addKickVoteOrKickMember',
       'joinChannel',
       'setMentionsOnly',
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel']),
 
     async createChannel() {
       let payload = {
@@ -298,27 +297,30 @@ export default {
       this.selectChannel(ch)
     },
 
-    inviteUser() {
-      this.inviteError = '';
+    async inviteUser() {
+      // this.inviteError = '';
 
-      const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
-      if (!userToInvite) {
-        this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
-        return;
-      }
+      // const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
+      // if (!userToInvite) {
+      //   this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
+      //   return;
+      // }
 
-      const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === this.inviteNickName);
+      // const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === this.inviteNickName);
 
-      if (isAlreadyMember) {
-        this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
-        return;
-      }
+      // if (isAlreadyMember) {
+      //   this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
+      //   return;
+      // }
       let payload = {
-        member: userToInvite,
-        channel: this.selectedChannel
+        channel: this.selectedChannel.name,
+        token: this.token,
+        user: this.inviteNickName
       }
-      this.addMemberToChannel(payload);
+      await this.addUserToChannel(payload);
       this.inviteNickName = '';
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
+      this.selectChannel(ch)
     },
 
     alreadyVotedFor(member) {
