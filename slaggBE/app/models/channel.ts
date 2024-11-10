@@ -14,13 +14,15 @@ export default class Channel extends BaseModel {
   @column()
   public visibility!: string
 
-  @column()
-  public adminId!: number
-
   @column.dateTime()
   public lastActive!: DateTime
 
-  @belongsTo(() => User)
+  @column()
+  public adminId!: number
+
+  @belongsTo(() => User, {
+    foreignKey: 'adminId',
+  })
   public admin!: relations.BelongsTo<typeof User>
 
   @hasMany(() => Message)

@@ -37,7 +37,7 @@
           v-for="channel in loggedUser.channels"
           :key="channel.name"
           @click="selectChannel(channel)"
-          :class="{ 'selected-channel': channel === selectedChannel }">
+          :class="{ 'selected-channel': channel.name === selectedChannel.name }">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -49,7 +49,7 @@
             <q-btn
               dense
               flat
-              v-if="channel.admin === loggedUser.user"
+              v-if="channel.admin.email === loggedUser.email"
               icon="delete"
               color="negative"
               @click="deleteChannelAction(channel)"
@@ -80,17 +80,17 @@
             <q-item-section>
               <q-item-label>{{ member.nickName }}</q-item-label>
               <q-item-label caption>
-                {{ member === selectedChannel.admin ? 'Admin' : 'Member' }} - Status: {{ member.status }}
+                {{ member.nickName === selectedChannel.admin.nickName ? 'Admin' : 'Member' }} - Status: {{ member.status }}
               </q-item-label>
             </q-item-section>
 
-            <q-item-section side v-if="member !== selectedChannel.admin">
-              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
-              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member !== loggedUser.user" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
+            <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
+              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user.nickName === selectedChannel.admin.nickName" @click="kickMember(member)" />
+              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.user.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
-          <template v-if="!selectedChannel.isPrivate || loggedUser.user === selectedChannel.admin">
+          <template v-if="!selectedChannel.isPrivate || loggedUser.user.nickName === selectedChannel.admin.nickName">
             <q-item-label header>Invite User</q-item-label>
 
             <q-item>
@@ -274,7 +274,27 @@ export default {
     },
 
     selectChannel(channel) {
-      this.setSelectedChannel(channel);
+      console.log(channel)
+      const transformedChannel = {
+        name: channel.name,
+        isPrivate: channel.visibility === 'private',
+        admin: {
+          firstName: channel.admin.firstName || '',
+          lastName: channel.admin.lastName || '',
+          nickName: channel.admin.nickname || '',
+          status: channel.admin.status || 'offline',
+        },
+        members: channel.users.map(user => ({
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          nickName: user.nickname || '',
+          status: user.state || 'offline'
+        })),
+        messages: [],
+        kickVotes: []
+      };
+
+      this.setSelectedChannel(transformedChannel);
     },
 
     joinPublicChannel(channel) {

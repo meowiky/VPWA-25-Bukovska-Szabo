@@ -32,7 +32,9 @@ export default class AuthController {
       return
     }
 
-    await authenticatedUser.load('channels')
+    await authenticatedUser.load('channels', (query) => {
+      query.preload('users').preload('admin')
+    })
 
     const allPublicChannels = await Channel.query().where('visibility', 'public')
 
@@ -62,6 +64,12 @@ export default class AuthController {
                 email: channel.admin.email,
               }
             : null,
+          users: channel.users.map((user) => ({
+            id: user.id,
+            nickname: user.nickname,
+            email: user.email,
+            state: user.state,
+          })),
         })),
       },
       allPublicChannels: allPublicChannels.map((channel) => ({
