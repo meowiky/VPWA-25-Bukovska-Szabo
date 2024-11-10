@@ -29,6 +29,10 @@ router
       .post('/addUserToChannel', [UserController, 'addUserToChannel'])
       .as('user.addUserToChannel')
       .use(middleware.auth())
+    router
+      .post('/joinPublicChannel', [UserController, 'joinPublicChannel'])
+      .as('user.joinPublicChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

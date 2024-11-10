@@ -107,6 +107,25 @@ async function addUserToChannel(channel: string, token: string, user: string): P
   }
 }
 
+async function joinPublicChannel(channel: string, token: string): Promise<void> {
+  try {
+    await axios.post(
+      '/api/joinPublicChannel',
+      {
+        channelName: channel
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error joining channel:', error);
+  }
+}
+
 // todo
 async function saveMessage(message: object, channel: object): Promise<[object, object]> {
   try {
@@ -177,5 +196,6 @@ export {
   getLoggedUser,
   logout,
   leaveChannel,
-  kickUserFromChannel
+  kickUserFromChannel,
+  joinPublicChannel
 }

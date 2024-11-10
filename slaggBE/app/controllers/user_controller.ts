@@ -175,7 +175,6 @@ export default class UserController {
   async addUserToChannel({ auth, request, response }: HttpContext) {
     const user = auth.user!
     const { channelName, userNickName } = request.only(['channelName', 'userNickName'])
-    console.log(channelName, userNickName)
 
     try {
       const channel = await Channel.query().where('name', channelName).preload('admin').first()
@@ -220,6 +219,46 @@ export default class UserController {
       console.error('Error adding user to channel:', error)
       return response.internalServerError({
         message: 'An error occurred while trying to add the user to the channel.',
+        error: error.message,
+      })
+    }
+  }
+
+  async joinPublicChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { channelName } = request.only(['channelName'])
+
+    try {
+      const channel = await Channel.query()
+        .where('name', channelName)
+        .andWhere('is_private', false)
+        .preload('users')
+        .first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Public channel with name '${channelName}' does not exist or is private.`,
+        })
+      }
+
+      const isUserAlreadyInChannel = channel.users.some(
+        (existingUser) => existingUser.id === user.id
+      )
+      if (isUserAlreadyInChannel) {
+        return response.badRequest({
+          message: `You are already a member of the channel '${channelName}'.`,
+        })
+      }
+
+      await channel.related('users').attach([user.id])
+
+      return response.ok({
+        message: `You have successfully joined the channel '${channelName}'.`,
+      })
+    } catch (error) {
+      console.error('Error joining channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to join the channel.',
         error: error.message,
       })
     }

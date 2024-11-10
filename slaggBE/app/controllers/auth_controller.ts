@@ -45,7 +45,7 @@ export default class AuthController {
     return {
       user: {
         id: authenticatedUser.id,
-        nickname: authenticatedUser.nickname,
+        nickName: authenticatedUser.nickname,
         surname: authenticatedUser.surname,
         name: authenticatedUser.name,
         email: authenticatedUser.email,
@@ -60,7 +60,7 @@ export default class AuthController {
           admin: channel.admin
             ? {
                 id: channel.admin.id,
-                nickname: channel.admin.nickname,
+                nickName: channel.admin.nickname,
                 email: channel.admin.email,
               }
             : null,

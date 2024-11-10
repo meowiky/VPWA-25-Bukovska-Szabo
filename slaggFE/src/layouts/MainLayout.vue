@@ -134,7 +134,7 @@
             <q-item v-for="channel in filteredPublicChannels" :key="channel.name">
               <q-item-section>{{ channel.name }}</q-item-section>
               <q-item-section side>
-                <q-btn icon="add" @click="joinPublicChannel(channel)" />
+                <q-btn icon="add" @click="joinChannel(channel.name)" />
               </q-item-section>
             </q-item>
           </q-list>
@@ -215,11 +215,9 @@ export default {
       token: 'getToken',
     }),
     filteredPublicChannels() {
-      return this.allPublicChannels;
-      // TODO:: Fix filtering public channels from API
-      // return this.allPublicChannels.filter(
-      //   channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
-      // );
+      return this.allPublicChannels.filter(
+        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+      );
     },
   },
 
@@ -228,12 +226,11 @@ export default {
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
       'addKickVoteOrKickMember',
-      'joinChannel',
       'setMentionsOnly',
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel', 'joinPublicChannel']),
 
     async createChannel() {
       let payload = {
@@ -281,8 +278,12 @@ export default {
       this.setSelectedChannel(channel);
     },
 
-    joinPublicChannel(channel) {
-      this.joinChannel(channel);
+    async joinChannel(channel) {
+      let payload = {
+        channel: channel,
+        token: this.token
+      }
+      await this.joinPublicChannel(payload)
       this.publicChannelsDialog = false;
     },
 
