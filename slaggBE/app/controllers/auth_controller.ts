@@ -66,7 +66,7 @@ export default class AuthController {
             : null,
           users: channel.users.map((user) => ({
             id: user.id,
-            nickname: user.nickname,
+            nickName: user.nickname,
             email: user.email,
             state: user.state,
           })),

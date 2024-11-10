@@ -76,7 +76,7 @@
       <q-list>
         <q-item-label header>Channel Members</q-item-label>
         <template v-if="selectedChannel.name">
-          <q-item v-for="member in selectedChannel.members" :key="member.nickName">
+          <q-item v-for="member in selectedChannel.users" :key="member.nickName">
             <q-item-section>
               <q-item-label>{{ member.nickName }}</q-item-label>
               <q-item-label caption>
@@ -85,9 +85,9 @@
             </q-item-section>
 
             <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
-              <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickname === this.selectedChannel.admin.nickName" @click="kickMember(member)" />
-              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickname" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
-              <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
+              <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickName === this.selectedChannel.admin.nickName" @click="kickMember(member)" />
+              <!-- <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
+              <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge> -->
             </q-item-section>
           </q-item>
           <template v-if="!selectedChannel.isPrivate || loggedUser.user.nickName === selectedChannel.admin.nickName">
@@ -280,26 +280,7 @@ export default {
     },
 
     selectChannel(channel) {
-      const transformedChannel = {
-        name: channel.name,
-        isPrivate: channel.visibility === 'private',
-        admin: {
-          firstName: channel.admin.firstName || '',
-          lastName: channel.admin.lastName || '',
-          nickName: channel.admin.nickname || '',
-          status: channel.admin.status || 'offline',
-        },
-        members: channel.users.map(user => ({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          nickName: user.nickname || '',
-          status: user.state || 'offline'
-        })),
-        messages: [],
-        kickVotes: []
-      };
-
-      this.setSelectedChannel(transformedChannel);
+      this.setSelectedChannel(channel);
     },
 
     joinPublicChannel(channel) {

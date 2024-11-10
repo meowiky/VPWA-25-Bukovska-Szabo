@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { ChannelStateInterface, MemberStateInterface, MessageStateInterface, UserStateInterface } from './state';
 
 // TODO:: Use environment variables or config files for API base URL
 axios.defaults.baseURL = 'http://localhost:3333'  // Adonis API URL
@@ -73,27 +72,27 @@ async function leaveChannel(channel: string, token: string): Promise<void> {
 }
 
 // todo
-async function removeUserFromChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
+async function removeUserFromChannel(user: object, channel: object): Promise<void> {
   try {
-    await axios.post(`/api/channels/${channel.name}/remove-user`, { nickname: user.nickName });
+    await axios.post(`/api/channels/${channel}/remove-user`, { nickname: user });
   } catch (error) {
     console.error('Error removing user from channel:', error);
   }
 }
 
 // todo
-async function addUserToChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
+async function addUserToChannel(user: object, channel: object): Promise<void> {
   try {
-    await axios.post(`/api/channels/${channel.name}/add-user`, { user: { nickname: user.nickName } });
+    await axios.post(`/api/channels/${channel}/add-user`, { user: { nickname: user } });
   } catch (error) {
     console.error('Error adding user to channel:', error);
   }
 }
 
 // todo
-async function saveMessage(message: MessageStateInterface, channel: ChannelStateInterface): Promise<[MessageStateInterface, ChannelStateInterface]> {
+async function saveMessage(message: object, channel: object): Promise<[object, object]> {
   try {
-    const response = await axios.post('/api/messages', { message, channelName: channel.name });
+    const response = await axios.post('/api/messages', { message, channelName: channel });
     return [response.data.message, response.data.channel];
   } catch (error) {
     console.error('Error saving message:', error);
@@ -112,7 +111,7 @@ async function login(email: string, password: string): Promise<string | null> {
   }
 }
 
-async function getLoggedUser(token: string): Promise<{ user: UserStateInterface; allPublicChannels: ChannelStateInterface[]; allUsers: MemberStateInterface[] } | false> {
+async function getLoggedUser(token: string): Promise<{ user: object; allPublicChannels: object[]; allUsers: object[] } | false> {
   try {
     const response = await axios.get('/api/me', {
       headers: {
