@@ -1,6 +1,8 @@
 import Channel from '#models/channel'
+import KickRequest from '#models/kick_request'
 import User from '#models/user'
 import type { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
 
 export default class UserController {
   async createNewChannel({ auth, request, response }: HttpContext) {
@@ -259,6 +261,105 @@ export default class UserController {
       console.error('Error joining channel:', error)
       return response.internalServerError({
         message: 'An error occurred while trying to join the channel.',
+        error: error.message,
+      })
+    }
+  }
+
+  async requestKickUserFromChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+
+    const { channelName, userNickName } = request.only(['channelName', 'userNickName'])
+
+    try {
+      const channel = await Channel.query()
+        .where('name', channelName)
+        .preload('admin')
+        .preload('users')
+        .first()
+
+      if (!channel) {
+        return response.notFound({ message: `Channel '${channelName}' does not exist.` })
+      }
+
+      if (user.nickname === userNickName) {
+        return response.badRequest({ message: 'You cannot request to kick yourself.' })
+      }
+
+      if (channel.admin.nickname === userNickName) {
+        return response.badRequest({ message: 'You cannot request to kick the admin.' })
+      }
+
+      const targetUser = await User.query().where('nickname', userNickName).first()
+      if (!targetUser) {
+        return response.notFound({ message: `User '${userNickName}' does not exist.` })
+      }
+
+      const isRequesterInChannel = await channel
+        .related('users')
+        .query()
+        .where('id', user.id)
+        .first()
+      if (!isRequesterInChannel) {
+        return response.unauthorized({
+          message: `You must be a member of the channel '${channelName}' to request a kick.`,
+        })
+      }
+
+      const isTargetInChannel = await channel
+        .related('users')
+        .query()
+        .where('id', targetUser.id)
+        .first()
+      if (!isTargetInChannel) {
+        return response.badRequest({
+          message: `User '${userNickName}' is not a member of the channel.`,
+        })
+      }
+
+      const existingRequest = await KickRequest.query()
+        .where('channelId', channel.id)
+        .where('requesterId', user.id)
+        .where('targetId', targetUser.id)
+        .first()
+
+      if (existingRequest) {
+        return response.badRequest({ message: 'You have already requested to kick this user.' })
+      }
+
+      await KickRequest.create({
+        channelId: channel.id,
+        requesterId: user.id,
+        targetId: targetUser.id,
+        requestedAt: DateTime.now(),
+      })
+
+      const kickRequestCount = await KickRequest.query()
+        .where('channelId', channel.id)
+        .where('targetId', targetUser.id)
+        .count('* as total')
+
+      const total = kickRequestCount[0].$extras.total
+
+      if (Number(total) >= 3) {
+        await channel.related('users').detach([targetUser.id])
+        await KickRequest.query()
+          .where('channelId', channel.id)
+          .where('targetId', targetUser.id)
+          .delete()
+
+        return response.ok({
+          message: `User '${userNickName}' has been removed from the channel '${channelName}' due to 3 kick requests.`,
+        })
+      }
+
+      return response.ok({
+        message: `Kick request for '${userNickName}' in channel '${channelName}' has been recorded.`,
+      })
+    } catch (error) {
+      console.error('Error requesting kick from channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to request the kick.',
         error: error.message,
       })
     }

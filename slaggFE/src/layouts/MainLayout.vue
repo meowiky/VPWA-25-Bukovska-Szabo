@@ -86,8 +86,8 @@
 
             <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
               <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickName === this.selectedChannel.admin.nickName" @click="kickMember(member.nickName)" />
-              <!-- <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
-              <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge> -->
+              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
+              <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
           <template v-if="!selectedChannel.isPrivate || loggedUser.user.nickName === selectedChannel.admin.nickName">
@@ -225,12 +225,11 @@ export default {
     ...mapMutations('all', [
       'toggleIsUserLoggedIn',
       'setSelectedChannel',
-      'addKickVoteOrKickMember',
       'setMentionsOnly',
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel', 'joinPublicChannel']),
+    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel', 'joinPublicChannel', 'requestKickUserFromChannel']),
 
     async createChannel() {
       let payload = {
@@ -325,34 +324,29 @@ export default {
     },
 
     alreadyVotedFor(member) {
-      const voteData = this.selectedChannel.kickVotes.find(
-        (vote) => vote.member.nickName === member.nickName
+      return member.kickRequests.some(
+        (request) => request.requesterNickName === this.loggedUser.nickName
       );
-
-      if (voteData) {
-        return voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName);
-      }
-      return false;
     },
 
     getVoteCount(member) {
-      const voteData = this.selectedChannel.kickVotes.find(
-        (vote) => vote.member.nickName === member.nickName
-      );
-      return voteData ? voteData.votes.length : 0;
+      return member.kickRequests.length;
     },
 
-    requestKick(member) {
+    async requestKick(member) {
       if (this.alreadyVotedFor(member)) {
         return;
       }
 
       let payload = {
-        member: member,
-        channel: this.selectedChannel
+        channel: this.selectedChannel.name,
+        token: this.token,
+        user: member.nickName
       };
 
-      this.addKickVoteOrKickMember(payload);
+      await this.requestKickUserFromChannel(payload);
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
+      this.selectChannel(ch)
     },
 
     async logout() {

@@ -1,4 +1,5 @@
 import Channel from '#models/channel'
+import KickRequest from '#models/kick_request'
 import User from '#models/user'
 import { loginValidator, registerValidator } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -32,12 +33,37 @@ export default class AuthController {
       return
     }
 
-    await authenticatedUser.load('channels', (query) => {
-      query.preload('users').preload('admin')
+    await authenticatedUser.load('channels', (channelQuery) => {
+      channelQuery.preload('users').preload('admin')
     })
 
-    const allPublicChannels = await Channel.query().where('is_private', false)
+    const kickRequests = await KickRequest.query()
+      .whereIn(
+        'channelId',
+        authenticatedUser.channels.map((channel) => channel.id)
+      )
+      .preload('requester')
+      .preload('target')
 
+    const kickRequestsByChannelAndUser = kickRequests.reduce(
+      (acc, kickRequest) => {
+        const channelId = kickRequest.channelId
+        const targetId = kickRequest.targetId
+        if (!acc[channelId]) {
+          acc[channelId] = {}
+        }
+        if (!acc[channelId][targetId]) {
+          acc[channelId][targetId] = []
+        }
+        acc[channelId][targetId].push({
+          requesterNickName: kickRequest.requester.nickname,
+        })
+        return acc
+      },
+      {} as Record<number, Record<number, { requesterNickName: string }[]>>
+    )
+
+    const allPublicChannels = await Channel.query().where('is_private', false)
     const allUsers = await User.query()
       .whereNot('id', authenticatedUser.id)
       .select('name', 'surname', 'nickname', 'state')
@@ -69,6 +95,7 @@ export default class AuthController {
             nickName: user.nickname,
             email: user.email,
             state: user.state,
+            kickRequests: kickRequestsByChannelAndUser[channel.id]?.[user.id] || [],
           })),
         })),
       },

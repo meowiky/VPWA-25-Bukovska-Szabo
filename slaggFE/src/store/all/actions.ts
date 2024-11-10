@@ -120,6 +120,11 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
     await dbConn.joinPublicChannel(payload.channel, payload.token);
     await dispatch('reloadData', payload.token);
   },
+
+  async requestKickUserFromChannel({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string, user: string}){
+    await dbConn.requestKickUserFromChannel(payload.channel, payload.token, payload.user);
+    await dispatch('reloadData', payload.token);
+  }
 }
 
 export default actions;

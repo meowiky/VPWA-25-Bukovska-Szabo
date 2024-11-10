@@ -33,6 +33,10 @@ router
       .post('/joinPublicChannel', [UserController, 'joinPublicChannel'])
       .as('user.joinPublicChannel')
       .use(middleware.auth())
+    router
+      .post('/requestKickUserFromChannel', [UserController, 'requestKickUserFromChannel'])
+      .as('user.requestKickUserFromChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

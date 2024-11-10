@@ -186,6 +186,26 @@ async function logout(token: string): Promise <boolean> {
   }
 }
 
+async function requestKickUserFromChannel(channel: string, token: string, user: string): Promise<void> {
+  try {
+    await axios.post(
+      '/api/requestKickUserFromChannel',
+      {
+        channelName: channel,
+        userNickName: user
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error requesting user from channel:', error);
+  }
+}
+
 export {
   registerNewUser,
   createNewChannel,
@@ -197,5 +217,6 @@ export {
   logout,
   leaveChannel,
   kickUserFromChannel,
-  joinPublicChannel
+  joinPublicChannel,
+  requestKickUserFromChannel
 }
