@@ -37,7 +37,7 @@ async function registerNewUser(nickName: string, email: string, password: string
 // Create a new channel (extract required data)
 async function createNewChannel(channel: ChannelStateInterface): Promise<void> {
   const data = {
-    name: channel.name,         // Only extract necessary fields
+    name: channel.name,
     visibility: channel.isPrivate ? 'private' : 'public'
   };
 
@@ -98,7 +98,7 @@ async function login(email: string, password: string): Promise<string | null> {
   }
 }
 
-async function getLoggedUser(token: string): Promise<UserStateInterface | false> {
+async function getLoggedUser(token: string): Promise<{ user: UserStateInterface; allPublicChannels: ChannelStateInterface[]; allUsers: MemberStateInterface[] } | false> {
   try {
     const response = await axios.get('/api/me', {
       headers: {
@@ -106,7 +106,13 @@ async function getLoggedUser(token: string): Promise<UserStateInterface | false>
       }
     });
 
-    return response.data.user || false;
+    const { user, allPublicChannels, allUsers } = response.data;
+
+    if (user && allPublicChannels && allUsers) {
+      return { user, allPublicChannels, allUsers };
+    }
+
+    return false;
   } catch (error) {
     console.error('Error fetching logged-in user:', error);
     return false;

@@ -1,3 +1,4 @@
+import Channel from '#models/channel'
 import User from '#models/user'
 import { loginValidator, registerValidator } from '#validators/auth'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -33,6 +34,12 @@ export default class AuthController {
 
     await authenticatedUser.load('channels')
 
+    const allPublicChannels = await Channel.query().where('visibility', 'public')
+
+    const allUsers = await User.query()
+      .whereNot('id', authenticatedUser.id)
+      .select('name', 'surname', 'nickname', 'state')
+
     return {
       user: {
         id: authenticatedUser.id,
@@ -57,6 +64,18 @@ export default class AuthController {
             : null,
         })),
       },
+      allPublicChannels: allPublicChannels.map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+        visibility: channel.visibility,
+        lastActive: channel.lastActive,
+      })),
+      allUsers: allUsers.map((user) => ({
+        firstName: user.name,
+        lastName: user.surname,
+        nickName: user.nickname,
+        status: user.state as 'online' | 'DND' | 'offline',
+      })),
     }
   }
 }

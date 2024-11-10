@@ -8,23 +8,26 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
   async login({ commit }: ActionContext<AllStateInterface, StateInterface>, payload: { email: string; password: string }) {
     try {
       const token = await dbConn.login(payload.email, payload.password);
+
       if (token) {
         commit('setToken', token);
-        const loggeduser = await dbConn.getLoggedUser(token)
-        if (loggeduser) {
-          commit('setLoggedUser', loggeduser);
+
+        const data = await dbConn.getLoggedUser(token);
+        
+        if (data) {
+          const { user, allPublicChannels, allUsers } = data;
+          commit('setLoggedUser', user);
+          commit('setAllPublicChannels', allPublicChannels);
+          commit('setOtherUsers', allUsers);
           commit('toggleIsUserLoggedIn');
-          return loggeduser;
+
+          return user;
         }
       }
     } catch (error) {
       console.error('Login error:', error);
       return null;
     }
-    //const allUsers = await dbConn.getAllUsersAsMemberInterface(loggedUser);
-    //commit('setOtherUsers', allUsers);
-    //const allPublicChannels = await dbConn.getAllPublicChannels();
-    //commit('setAllPublicChannels', allPublicChannels);
   },
 
   async register({ commit }: ActionContext<AllStateInterface, StateInterface>, payload: { username: string; email: string; password: string }) {
@@ -33,11 +36,16 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
 
       if (token) {
         commit('setToken', token);
-        const loggeduser = await dbConn.getLoggedUser(token)
-        if (loggeduser) {
-          commit('setLoggedUser', loggeduser);
+        const data = await dbConn.getLoggedUser(token);
+        
+        if (data) {
+          const { user, allPublicChannels, allUsers } = data;
+          commit('setLoggedUser', user);
+          commit('setAllPublicChannels', allPublicChannels);
+          commit('setOtherUsers', allUsers);
           commit('toggleIsUserLoggedIn');
-          return loggeduser;
+
+          return user;
         }
       }
       return null;
@@ -55,6 +63,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
         commit('setToken', '');
         commit('setLoggedUser', null);
         commit('toggleIsUserLoggedIn');
+        commit('setOtherUsers', null);
 
       }
     } catch (error) {
