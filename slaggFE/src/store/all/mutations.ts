@@ -35,14 +35,6 @@ const mutation: MutationTree<AllStateInterface> = {
     state.publicChannels = payload;
   },
 
-  leaveChannel(state, payload: ChannelStateInterface) {
-    state.loggedUser.channels = state.loggedUser.channels.filter(channel => channel !== payload);
-    dbConn.removeUserFromChannel(state.loggedUser.user, payload)
-    if (state.loggedUser.user === payload.admin){
-      //mutation.deleteChannel(state, payload)
-    }
-  },
-
   joinChannel(state, payload: ChannelStateInterface){
     dbConn.addUserToChannel(state.loggedUser.user, payload);
     // state.loggedUser.channels.push(payload) // TODO:: Push to pivot table

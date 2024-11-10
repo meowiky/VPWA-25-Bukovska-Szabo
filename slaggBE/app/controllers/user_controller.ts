@@ -63,4 +63,45 @@ export default class UserController {
       })
     }
   }
+
+  async leaveChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { name } = request.only(['name'])
+
+    try {
+      const channel = await Channel.query().where('name', name).preload('users').first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${name}' does not exist.`,
+        })
+      }
+
+      const isUserInChannel = channel.users.some((u) => u.id === user.id)
+
+      if (!isUserInChannel) {
+        return response.forbidden({
+          message: `You are not a member of the channel '${name}'.`,
+        })
+      }
+
+      if (channel.adminId === user.id) {
+        await channel.related('users').detach()
+        await channel.delete()
+        return response.ok({
+          message: `Channel '${name}' has been deleted.`,
+        })
+      } else {
+        await channel.related('users').detach([user.id])
+        return response.ok({
+          message: `You have left the channel '${name}'.`,
+        })
+      }
+    } catch (error) {
+      console.error('Error leaving channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while attempting to leave the channel.',
+      })
+    }
+  }
 }

@@ -94,7 +94,12 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
   },
 
   async deleteChannel({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {name: string, token: string}){
-    await dbConn. deleteChannel(payload.name, payload.token);
+    await dbConn.deleteChannel(payload.name, payload.token);
+    await dispatch('reloadData', payload.token);
+  },
+
+  async leaveChannel({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {name: string, token: string}){
+    await dbConn.leaveChannel(payload.name, payload.token);
     await dispatch('reloadData', payload.token);
   },
 }

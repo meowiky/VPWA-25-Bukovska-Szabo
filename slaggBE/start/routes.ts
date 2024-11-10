@@ -14,8 +14,12 @@ router
       .as('user.createNewChannel')
       .use(middleware.auth())
     router
-      .delete('deleteChannel', [UserController, 'deleteChannel'])
+      .delete('/deleteChannel', [UserController, 'deleteChannel'])
       .as('user.deleteChannel')
+      .use(middleware.auth())
+    router
+      .delete('/leaveChannel', [UserController, 'leaveChannel'])
+      .as('user.leaveChannel')
       .use(middleware.auth())
   })
   .prefix('/api')
