@@ -37,7 +37,7 @@
           v-for="channel in loggedUser.channels"
           :key="channel.name"
           @click="selectChannel(channel)"
-          :class="{ 'selected-channel': channel.name === selectedChannel.name }">
+          :class="{ 'selected-channel': selectedChannel && channel.name === selectedChannel.name }">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -75,7 +75,7 @@
     <q-drawer show-if-above v-model="rightDrawerOpenLocal" @update:model-value="toggleRightDrawer" side="right" bordered>
       <q-list>
         <q-item-label header>Channel Members</q-item-label>
-        <template v-if="selectedChannel.name">
+        <template v-if="selectedChannel">
           <q-item v-for="member in selectedChannel.users" :key="member.nickName">
             <q-item-section>
               <q-item-label>{{ member.nickName }}</q-item-label>

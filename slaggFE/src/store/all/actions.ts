@@ -20,6 +20,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
           commit('setAllPublicChannels', allPublicChannels);
           commit('setOtherUsers', allUsers);
           commit('toggleIsUserLoggedIn');
+          commit('setSelectedChannel', null);
 
           return user;
         }
@@ -44,6 +45,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
           commit('setAllPublicChannels', allPublicChannels);
           commit('setOtherUsers', allUsers);
           commit('toggleIsUserLoggedIn');
+          commit('setSelectedChannel', null);
 
           return user;
         }
@@ -64,6 +66,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
         commit('setLoggedUser', null);
         commit('toggleIsUserLoggedIn');
         commit('setOtherUsers', null);
+        commit('setSelectedChannel', null);
 
       }
     } catch (error) {
