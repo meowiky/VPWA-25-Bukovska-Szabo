@@ -16,17 +16,21 @@ async function getChannel(name: string): Promise<ChannelStateInterface | undefin
 }
 
 // Register a new user (extract relevant fields only)
-async function registerNewUser(user: UserStateInterface): Promise<void> {
+async function registerNewUser(nickName: string, email: string, password: string): Promise<string | null> {
   const data = {
-    nickname: user.user.nickName,
-    email: user.email,
-    password: user.password,
+    nickname: nickName,
+    email: email,
+    password: password,
   };
 
   try {
-    await axios.post('/api/users', data);
+    const response = await axios.post('/api/register', data);
+    const token = response.data?.token;
+
+    return token || null;
   } catch (error) {
     console.error('Error registering new user:', error);
+    return null;
   }
 }
 
@@ -83,12 +87,28 @@ async function saveMessage(message: MessageStateInterface, channel: ChannelState
 }
 
 // Verify user credentials during login (only extract email and password)
-async function verifyUserCredentials(email: string, password: string): Promise<UserStateInterface | false> {
+async function login(email: string, password: string): Promise<string | null> {
   try {
     const response = await axios.post('/api/login', { email, password });
-    return response.data || false;
+    const token = response.data?.token;
+    return token || null;
   } catch (error) {
     console.error('Error verifying credentials:', error);
+    return null;
+  }
+}
+
+async function getLoggedUser(token: string): Promise<UserStateInterface | false> {
+  try {
+    const response = await axios.get('/api/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    return response.data.user || false;
+  } catch (error) {
+    console.error('Error fetching logged-in user:', error);
     return false;
   }
 }
@@ -115,6 +135,23 @@ async function getAllPublicChannels(): Promise<ChannelStateInterface[]> {
   }
 }
 
+async function logout(token: string): Promise <boolean> {
+  try {
+    const response = await axios.delete('/api/logout', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    if (response.data.message = 'success') {
+      return true
+    }
+    return false
+  } catch (error) {
+    console.error('Error during logout:', error);
+    return false;
+  }
+}
+
 export {
   getChannel,
   registerNewUser,
@@ -123,7 +160,9 @@ export {
   removeUserFromChannel,
   addUserToChannel,
   saveMessage,
-  verifyUserCredentials,
+  login,
   getAllUsersAsMemberInterface,
-  getAllPublicChannels
+  getAllPublicChannels,
+  getLoggedUser,
+  logout
 }

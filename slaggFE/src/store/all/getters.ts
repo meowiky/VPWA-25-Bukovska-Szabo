@@ -23,6 +23,9 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   },
   getRightDrawerOpen (state) {
     return state.rightDrawerOpen
+  },
+  getToken (state) {
+    return state.token
   }
 };
 

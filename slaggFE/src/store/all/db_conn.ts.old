@@ -47,7 +47,7 @@ export function saveMessage(message: MessageStateInterface, channel: ChannelStat
   return [message, channel]
 }
 
-export function verifyUserCredentials(email: string, password: string) {
+export function login(email: string, password: string) {
   const user = db.users_db.users.find(u => u.email === email);
   if (!user) { return false }
 

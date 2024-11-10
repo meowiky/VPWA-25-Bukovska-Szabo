@@ -9,6 +9,10 @@ const mutation: MutationTree<AllStateInterface> = {
     state.isUserLoggedIn = !state.isUserLoggedIn;
   },
 
+  setToken(state, payload: string){
+    state.token = payload;
+  },
+
   toggleRightDrawerOpen(state) {
     state.rightDrawerOpen = !state.rightDrawerOpen;
   },

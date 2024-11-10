@@ -38,6 +38,7 @@ export interface UserStateInterface {
 export interface AllStateInterface {
   mentionsOnly: boolean;
   isUserLoggedIn: boolean;
+  token: string;
   loggedUser: UserStateInterface;
   selectedChannel: ChannelStateInterface;
   usersAsMemberInterface: MemberStateInterface[];
@@ -49,6 +50,7 @@ function state(): AllStateInterface {
   return {
     mentionsOnly: false,
     isUserLoggedIn: false,
+    token: '',
     loggedUser: {
       user: {
         firstName: '',

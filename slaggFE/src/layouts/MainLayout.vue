@@ -167,7 +167,7 @@
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
+import { mapGetters, mapMutations, mapActions } from 'vuex';
 
 export default {
   data() {
@@ -196,6 +196,11 @@ export default {
     },
     rightDrawerOpen(newVal) {
       this.rightDrawerOpenLocal = newVal;
+    },
+    loggedUser(newVal) {
+      if (newVal === null) {
+        this.$router.push('/signin/login');
+      }
     }
   },
 
@@ -207,6 +212,7 @@ export default {
       allUsers: 'getAllUsers',
       allPublicChannels: 'getAllPublicChannels',
       rightDrawerOpen: 'getRightDrawerOpen',
+      token: 'getToken',
     }),
     filteredPublicChannels() {
       return this.allPublicChannels;
@@ -232,6 +238,7 @@ export default {
       'setUserStatus',
       'toggleRightDrawerOpen'
     ]),
+    ...mapActions('all', ['logOut']),
 
     createChannel() {
       let payload = {
@@ -337,9 +344,8 @@ export default {
       this.addKickVoteOrKickMember(payload);
     },
 
-    logout() {
-      this.toggleIsUserLoggedIn();
-      this.$router.push('/signin/login');
+    async logout() {
+      await this.logOut(this.token);
     },
 
     toggleMentionsOnly() {
