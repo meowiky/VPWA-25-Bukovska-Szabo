@@ -1,6 +1,7 @@
 <template>
   <div class="chat-page" >
-    <div v-if="!selectedChannel.name" class="select-channel-message">
+    <div v-if="true" class="select-channel-message">
+    <!-- <div v-if="!selectedChannel.name" class="select-channel-message"> -->
       <q-card class="q-pa-md">
         <q-card-section>
           <div class="text-h6">Please select a channel</div>
@@ -51,14 +52,14 @@
             <q-btn @click="handleMessage" label="Send" color="primary" />
           </div>
 
-          <div class="debug-section">
+          <!-- <div class="debug-section">
             <q-btn
               label="Simulate"
               color="red"
               @click="toggleSimulatedMessages"
               :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"
             />
-          </div>
+          </div> -->
         </div>
       </q-card>
     </div>
@@ -105,20 +106,20 @@ export default {
   },
 
   created() {
-    this.initMessages();
-    this.simulateTypingMember();
+    //this.initMessages();
+    //this.simulateTypingMember();
   },
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
       if (newChannel !== oldChannel) {
-        this.initMessages();
-        this.simulateTypingMember();
+        //this.initMessages();
+        //this.simulateTypingMember();
       }
     },
     'loggedUser.user.status': function (newStatus) {
       if (newStatus !== 'offline') {
-        this.initMessages();
+        //this.initMessages();
       }
     },
   },
