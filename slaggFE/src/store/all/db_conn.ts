@@ -4,18 +4,6 @@ import { ChannelStateInterface, MemberStateInterface, MessageStateInterface, Use
 // TODO:: Use environment variables or config files for API base URL
 axios.defaults.baseURL = 'http://localhost:3333'  // Adonis API URL
 
-// Fetch a specific channel by name
-async function getChannel(name: string): Promise<ChannelStateInterface | undefined> {
-  try {
-    const response = await axios.get(`/api/channels/${name}`);
-    return response.data || undefined;
-  } catch (error) {
-    console.error('Error fetching channel:', error);
-    return undefined;
-  }
-}
-
-// Register a new user (extract relevant fields only)
 async function registerNewUser(nickName: string, email: string, password: string): Promise<string | null> {
   const data = {
     nickname: nickName,
@@ -34,7 +22,7 @@ async function registerNewUser(nickName: string, email: string, password: string
   }
 }
 
-// Create a new channel (extract required data)
+// todo
 async function createNewChannel(channel: ChannelStateInterface): Promise<void> {
   const data = {
     name: channel.name,
@@ -48,7 +36,7 @@ async function createNewChannel(channel: ChannelStateInterface): Promise<void> {
   }
 }
 
-// Delete a channel by name
+// todo
 async function deleteChannel(channel: ChannelStateInterface): Promise<void> {
   try {
     await axios.delete(`/api/channels/${channel.name}`);
@@ -57,7 +45,7 @@ async function deleteChannel(channel: ChannelStateInterface): Promise<void> {
   }
 }
 
-// Remove a user from a channel (only extract necessary user data)
+// todo
 async function removeUserFromChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
   try {
     await axios.post(`/api/channels/${channel.name}/remove-user`, { nickname: user.nickName });
@@ -66,7 +54,7 @@ async function removeUserFromChannel(user: MemberStateInterface, channel: Channe
   }
 }
 
-// Add a user to a channel (only extract necessary user data)
+// todo
 async function addUserToChannel(user: MemberStateInterface, channel: ChannelStateInterface): Promise<void> {
   try {
     await axios.post(`/api/channels/${channel.name}/add-user`, { user: { nickname: user.nickName } });
@@ -75,7 +63,7 @@ async function addUserToChannel(user: MemberStateInterface, channel: ChannelStat
   }
 }
 
-// Save a message (extract the necessary data)
+// todo
 async function saveMessage(message: MessageStateInterface, channel: ChannelStateInterface): Promise<[MessageStateInterface, ChannelStateInterface]> {
   try {
     const response = await axios.post('/api/messages', { message, channelName: channel.name });
@@ -86,7 +74,6 @@ async function saveMessage(message: MessageStateInterface, channel: ChannelState
   }
 }
 
-// Verify user credentials during login (only extract email and password)
 async function login(email: string, password: string): Promise<string | null> {
   try {
     const response = await axios.post('/api/login', { email, password });
@@ -119,28 +106,6 @@ async function getLoggedUser(token: string): Promise<{ user: UserStateInterface;
   }
 }
 
-// Get all users as members (exclude the logged-in user, extract required fields)
-async function getAllUsersAsMemberInterface(loggedUser: UserStateInterface): Promise<MemberStateInterface[]> {
-  try {
-    const response = await axios.get('/api/users/members', { params: { loggedUser } });
-    return response.data || [];
-  } catch (error) {
-    console.error('Error getting users as members:', error);
-    return [];
-  }
-}
-
-// Get all public channels (no need for complex data handling)
-async function getAllPublicChannels(): Promise<ChannelStateInterface[]> {
-  try {
-    const response = await axios.get('/api/channels/public');
-    return response.data || [];
-  } catch (error) {
-    console.error('Error fetching public channels:', error);
-    return [];
-  }
-}
-
 async function logout(token: string): Promise <boolean> {
   try {
     const response = await axios.delete('/api/logout', {
@@ -159,7 +124,6 @@ async function logout(token: string): Promise <boolean> {
 }
 
 export {
-  getChannel,
   registerNewUser,
   createNewChannel,
   deleteChannel,
@@ -167,8 +131,6 @@ export {
   addUserToChannel,
   saveMessage,
   login,
-  getAllUsersAsMemberInterface,
-  getAllPublicChannels,
   getLoggedUser,
   logout
 }
