@@ -141,7 +141,8 @@ export default {
       'kickUserFromChannel',
       'leaveChannel',
       'deleteChannel',
-      'createNewChannel'
+      'createNewChannel',
+      'requestKickUserFromChannel'
     ]),
 
     async initMessages() {
@@ -349,19 +350,12 @@ export default {
               break;
             }
 
-            const voteData = this.selectedChannel.kickVotes.find((vote) => vote.member.nickName === args[0]);
-            if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.nickName)) {
-              this.displayedError = `You have already voted to kick a user with nickname '${args[0]}' out.`;
-              break;
-            }
-            else {
-              let payload = {
-                member: memberToKick,
-                channel: this.selectedChannel
-              };
-
-              this.addKickVoteOrKickMember(payload);
-            }
+            let payload = {
+              user: memberToKick.nickName,
+              channel: this.selectedChannel.name,
+              token: this.token
+            };
+            await this.requestKickUserFromChannel(payload);
           }
           else {
             this.displayedError = 'You are not allowed to kick or request to kick a member out of this channel.';
