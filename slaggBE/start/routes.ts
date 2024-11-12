@@ -45,6 +45,10 @@ router
       .post('/messages', [UserController, 'saveMessage'])
       .as('user.saveMessage')
       .use(middleware.auth())
+    router
+      .get('/isUserInChannel', [UserController, 'isUserInChannel'])
+      .as('user.isUserInChannel')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

@@ -235,6 +235,25 @@ async function getMessages(channelName: string, token: string): Promise<object[]
   }
 }
 
+async function isUserInChannel(channel: string, token: string): Promise<boolean> {
+  try {
+    const response = await axios.get('/api/isUserInChannel', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      params: {
+        channelName: channel
+      }
+    });
+
+    return response.data || undefined;
+  } catch (error) {
+    console.error('Error checking if user is in channel:', error);
+    return false;
+  }
+}
+
 export {
   registerNewUser,
   createNewChannel,
@@ -249,4 +268,5 @@ export {
   joinPublicChannel,
   requestKickUserFromChannel,
   getMessages,
+  isUserInChannel
 }

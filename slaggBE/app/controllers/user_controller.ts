@@ -443,4 +443,31 @@ export default class UserController {
       })
     }
   }
+
+  async isUserInChannel({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { channelName } = request.only(['channelName'])
+
+    try {
+      const channel = await Channel.query().where('name', channelName).preload('users').first()
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${channelName}' does not exist.`,
+        })
+      }
+
+      const isUserInChannel = channel.users.some((u) => u.id === user.id)
+
+      return response.ok({
+        message: `Membership status of '${channelName}' checked successfully.`,
+        data: isUserInChannel,
+      })
+    } catch (error) {
+      console.error('Error checking if user is in channel:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to check if the user is in the channel.',
+        error: error.message,
+      })
+    }
+  }
 }

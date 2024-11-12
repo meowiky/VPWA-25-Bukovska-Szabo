@@ -1,7 +1,7 @@
 // store/actions.ts
-import { ActionTree, ActionContext } from 'vuex';
-import { StateInterface } from '../index';
-import { AllStateInterface } from './state';
+import {ActionContext, ActionTree} from 'vuex';
+import {StateInterface} from '../index';
+import {AllStateInterface} from './state';
 import * as dbConn from 'src/store/all/db_conn';
 
 const actions: ActionTree<AllStateInterface, StateInterface> = {
@@ -134,6 +134,10 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
   async sendNewMessage({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string, message: string}){
     await dbConn.saveMessage(payload.channel, payload.token, payload.message);
     await dispatch('reloadData', payload.token);
+  },
+
+  async isUserInChannel({  }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string}){
+    return await dbConn.isUserInChannel(payload.channel, payload.token);
   }
 }
 

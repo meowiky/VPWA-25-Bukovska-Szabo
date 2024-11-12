@@ -90,7 +90,7 @@
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
-          <template v-if="!selectedChannel.isPrivate || loggedUser.user.nickName === selectedChannel.admin.nickName">
+          <template v-if="!selectedChannel.isPrivate || loggedUser.nickName === selectedChannel.admin.nickName">
             <q-item-label header>Invite User</q-item-label>
 
             <q-item>
@@ -241,6 +241,8 @@ export default {
       this.createChannelDialog = false;
     },
 
+    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
+    // TODO:: We get 404 on messages get upon leaving
     async leaveChannelAction(channel) {
       let payload = {
         name: channel.name,

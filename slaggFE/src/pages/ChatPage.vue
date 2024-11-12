@@ -94,13 +94,6 @@ export default {
       token: 'getToken',
       messages: 'getMessages'
     }),
-    filteredPublicChannels() {
-      return this.allPublicChannels;
-      // TODO:: Fix filtering public channels from API
-      // return this.allPublicChannels.filter(
-      //   channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
-      // );
-    },
 
     messagesCompositeKey() {
       return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
@@ -108,6 +101,7 @@ export default {
   },
 
   created() {
+    console.log(this.allPublicChannels)
     this.initMessages();
     // this.simulateTypingMember();
   },
@@ -138,7 +132,16 @@ export default {
       // 'fetchNewMessage',
       'toggleRightDrawerOpen',
     ]),
-    ...mapActions('all', ['fetchMessages', 'sendNewMessage']),
+    ...mapActions('all', [
+      'fetchMessages',
+      'sendNewMessage',
+      'isUserInChannel',
+      'joinPublicChannel',
+      'addUserToChannel',
+      'kickUserFromChannel',
+      'leaveChannel',
+      'deleteChannel'
+    ]),
 
     async initMessages() {
       await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
@@ -243,7 +246,7 @@ export default {
     },
 
     simulateTypingMember() {
-      const otherMembers = this.selectedChannel.members.filter(
+      const otherMembers = this.selectedChannel.users.filter(
         user => user.nickName !== this.loggedUser.nickName
       );
       if (otherMembers.length === 0) return;
@@ -252,7 +255,7 @@ export default {
       this.showTypingBanner = true;
     },
 
-    handleCommand(commandString) {
+    async handleCommand(commandString) {
       const [command, ...args] = commandString.split(' ');
 
       switch (command.toLowerCase()) {
@@ -264,58 +267,74 @@ export default {
             break;
           }
 
-          const channelToJoin = this.filteredPublicChannels.find((channel) => channel.name === args[0]);
+          let payload = {
+            token: this.token,
+            channel: args[0]
+          }
 
-          if (channelToJoin) {
-            this.joinChannel(channelToJoin);
-          }
-          else {
+          const channelToJoin = this.allPublicChannels.find((channel) => channel.name === args[0]);
+          if (!channelToJoin) {
             this.displayedError = 'This channel does not exist or it is a private channel.';
+            break;
           }
+
+          let alreadyInChannel = false;
+          await this.isUserInChannel(payload).then((isInChannel) => {
+            if (isInChannel.data) {
+              this.displayedError = 'You are already a member of this channel.';
+              alreadyInChannel = true;
+            }
+          })
+          if (alreadyInChannel) { break; }
+
+          this.joinPublicChannel(payload);
           break;
 
         case '/invite':
           this.displayedError = '';
-          if (!this.selectedChannel.isPrivate || this.loggedUser === this.selectedChannel.admin) {
+          if (!this.selectedChannel.isPrivate || this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
             const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
             if (!userToInvite) {
               this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
               break;
             }
 
-            const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === args[0]);
+            const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === args[0]);
 
             if (isAlreadyMember) {
               this.displayedError = `User '${args[0]}' is already a member of this channel.`;
               break;
             }
             let payload = {
-              member: userToInvite,
-              channel: this.selectedChannel
+              user: userToInvite.nickName,
+              channel: this.selectedChannel.name,
+              token: this.token
             }
-            this.addMemberToChannel(payload);
+            await this.addUserToChannel(payload);
           }
           else {
             this.displayedError = 'You are not allowed to invite new members to this channel.';
           }
           break;
 
+        // TODO:: Admin kick works but check vote kick
         case '/kick':
           if (args[0] === this.loggedUser.nickName) {
             this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
             break;
           }
-          const memberToKick = this.selectedChannel.members.find((member) => member.nickName === args[0]);
-          if (this.loggedUser === this.selectedChannel.admin) {
+          const memberToKick = this.selectedChannel.users.find((member) => member.nickName === args[0]);
+          if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
             if (!memberToKick) {
               this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
               break;
             }
             let payload = {
-              member: memberToKick,
-              channel: this.selectedChannel,
+              user: memberToKick.nickName,
+              channel: this.selectedChannel.name,
+              token: this.token
             }
-            this.kickMemberFromChannel(payload);
+            await this.kickUserFromChannel(payload);
           }
           else if (!this.selectedChannel.isPrivate) {
             this.displayedError = 'You are not the admin of this channel, so you will only vote to kick a member.';
@@ -344,12 +363,18 @@ export default {
           break;
 
         case '/cancel':
-          this.leaveChannel(this.selectedChannel);
+          await this.leaveChannel({
+            name: this.selectedChannel.name,
+            token: this.token
+          });
           break;
 
         case '/quit':
-          if (this.loggedUser === this.selectedChannel.admin) {
-            this.deleteChannel(this.selectedChannel);
+          if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
+            await this.deleteChannel({
+              name: this.selectedChannel.name,
+              token: this.token
+            });
           }
           else {
             this.displayedError = 'You are not admin of this channel, so you can not delete it.';
@@ -361,7 +386,7 @@ export default {
           break;
 
         default:
-          this.sendMessage();
+          await this.sendMessage();
       }
       this.newMessage = '';
     },
