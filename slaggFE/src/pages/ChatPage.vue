@@ -1,7 +1,7 @@
 <template>
   <div class="chat-page" >
-    <div v-if="true" class="select-channel-message">
-    <!-- <div v-if="!selectedChannel.name" class="select-channel-message"> -->
+<!--    <div v-if="true" class="select-channel-message">-->
+     <div v-if="!selectedChannel || !selectedChannel.name" class="select-channel-message">
       <q-card class="q-pa-md">
         <q-card-section>
           <div class="text-h6">Please select a channel</div>
@@ -26,8 +26,8 @@
               :name="message.user.nickName"
               :text="[message.content]"
               :sent="isLoggedUser(message)"
-              :stamp="new Date(message.timestamp).toLocaleString()"
-              :bg-color="message.content.includes('@' + loggedUser.user.nickName) ? 'deep-orange-4' : ''"
+              :stamp="new Date(message.createdAt).toLocaleString()"
+              :bg-color="message.content.includes('@' + loggedUser.nickName) ? 'deep-orange-4' : ''"
             />
           </q-infinite-scroll>
         </div>
@@ -52,14 +52,14 @@
             <q-btn @click="handleMessage" label="Send" color="primary" />
           </div>
 
-          <!-- <div class="debug-section">
-            <q-btn
-              label="Simulate"
-              color="red"
-              @click="toggleSimulatedMessages"
-              :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"
-            />
-          </div> -->
+<!--          <div class="debug-section">-->
+<!--            <q-btn-->
+<!--              label="Simulate"-->
+<!--              color="red"-->
+<!--              @click="toggleSimulatedMessages"-->
+<!--              :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"-->
+<!--            />-->
+<!--          </div>-->
         </div>
       </q-card>
     </div>
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import {mapGetters, mapMutations} from 'vuex';
+import {mapActions, mapGetters, mapMutations} from 'vuex';
 import {AppVisibility} from 'quasar';
 
 export default {
@@ -90,7 +90,9 @@ export default {
       selectedChannel: 'getSelectedChannel',
       allUsers: 'getAllUsers',
       allPublicChannels: 'getAllPublicChannels',
-      mentionsOnly: 'getMentionsOnly'
+      mentionsOnly: 'getMentionsOnly',
+      token: 'getToken',
+      messages: 'getMessages'
     }),
     filteredPublicChannels() {
       return this.allPublicChannels;
@@ -101,50 +103,52 @@ export default {
     },
 
     messagesCompositeKey() {
-      return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.user.status}`;
+      return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
     }
   },
 
   created() {
-    //this.initMessages();
-    //this.simulateTypingMember();
+    this.initMessages();
+    // this.simulateTypingMember();
   },
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
       if (newChannel !== oldChannel) {
-        //this.initMessages();
-        //this.simulateTypingMember();
+        this.selectedChannel = newChannel;
+        this.initMessages();
+        // this.simulateTypingMember();
       }
     },
-    'loggedUser.user.status': function (newStatus) {
+    'loggedUser.status': function (newStatus) {
       if (newStatus !== 'offline') {
-        //this.initMessages();
+        this.initMessages();
       }
     },
   },
 
   methods: {
     ...mapMutations('all', [
-      'sendNewMessage',
-      'addMemberToChannel',
-      'kickMemberFromChannel',
-      'addKickVoteOrKickMember',
-      'leaveChannel',
-      'deleteChannel',
-      'joinChannel',
-      'fetchNewMessage',
-      'toggleRightDrawerOpen'
+      // 'addMemberToChannel',
+      // 'kickMemberFromChannel',
+      // 'addKickVoteOrKickMember',
+      // 'leaveChannel',
+      // 'deleteChannel',
+      // 'joinChannel',
+      // 'fetchNewMessage',
+      'toggleRightDrawerOpen',
     ]),
+    ...mapActions('all', ['fetchMessages', 'sendNewMessage']),
 
-    initMessages() {
-      if (this.selectedChannel && this.selectedChannel.messages) {
-        this.visibleMessages = this.selectedChannel.messages.slice(-this.itemsPerPage);
+    async initMessages() {
+      await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
+      if (this.selectedChannel && this.messages) {
+        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
       }
     },
 
     isLoggedUser(message) {
-      return message.user.nickName === this.loggedUser.user.nickName;
+      return message.user.nickName === this.loggedUser.nickName;
     },
 
     handleMessage() {
@@ -168,13 +172,13 @@ export default {
     },
 
     simulateIncomingMessage() {
-      const otherUsers = this.selectedChannel.members.filter(user => user.nickName !== this.loggedUser.user.nickName);
+      const otherUsers = this.selectedChannel.users.filter(user => user.nickName !== this.loggedUser.nickName);
       const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
       const mentionLoggedUser = Math.random() < 0.5;
 
       let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
       if (mentionLoggedUser) {
-        randomMessageContent = `Hi @${this.loggedUser.user.nickName} how are you?`;
+        randomMessageContent = `Hi @${this.loggedUser.nickName} how are you?`;
       }
 
       const incomingMessage = {
@@ -186,19 +190,19 @@ export default {
 
       this.fetchNewMessage(incomingMessage)
 
-      if (this.loggedUser.user.status === 'offline') {
+      if (this.loggedUser.status === 'offline') {
         return;
       }
-      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
+      this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
 
       // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
-      if (this.loggedUser.user.status === 'DND') {
+      if (this.loggedUser.status === 'DND') {
         return;
       }
 
       if (AppVisibility.appVisible) {
-        if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.user.nickName)) {
+        if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.nickName)) {
           this.$q.notify({
             message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
             color: 'info',
@@ -213,10 +217,11 @@ export default {
       if (this.loading) return;
       this.loading = true;
 
+
       const currentVisibleCount = this.visibleMessages.length;
-      const totalMessages = this.selectedChannel.messages.length;
+      const totalMessages = this.messages.length;
       const start = Math.max(totalMessages - currentVisibleCount - this.itemsPerPage, 0);
-      const newMessages = this.selectedChannel.messages.slice(start, totalMessages - currentVisibleCount);
+      const newMessages = this.messages.slice(start, totalMessages - currentVisibleCount);
 
       if (newMessages.length > 0) {
         // This will cause a jump to the new batch of messages
@@ -225,20 +230,21 @@ export default {
       this.loading = false;
     },
 
-    sendMessage() {
+    async sendMessage() {
       let payload = {
-        content: this.newMessage,
-        timestamp: new Date(),
-        channel: this.selectedChannel
+        message: this.newMessage,
+        token: this.token,
+        channel: this.selectedChannel.name
       }
-      this.sendNewMessage(payload)
-      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
+      await this.sendNewMessage(payload);
+      await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
+      this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
       this.newMessage = '';
     },
 
     simulateTypingMember() {
       const otherMembers = this.selectedChannel.members.filter(
-        user => user.nickName !== this.loggedUser.user.nickName
+        user => user.nickName !== this.loggedUser.nickName
       );
       if (otherMembers.length === 0) return;
 
@@ -270,7 +276,7 @@ export default {
 
         case '/invite':
           this.displayedError = '';
-          if (!this.selectedChannel.isPrivate || this.loggedUser.user === this.selectedChannel.admin) {
+          if (!this.selectedChannel.isPrivate || this.loggedUser === this.selectedChannel.admin) {
             const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
             if (!userToInvite) {
               this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
@@ -295,12 +301,12 @@ export default {
           break;
 
         case '/kick':
-          if (args[0] === this.loggedUser.user.nickName) {
+          if (args[0] === this.loggedUser.nickName) {
             this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
             break;
           }
           const memberToKick = this.selectedChannel.members.find((member) => member.nickName === args[0]);
-          if (this.loggedUser.user === this.selectedChannel.admin) {
+          if (this.loggedUser === this.selectedChannel.admin) {
             if (!memberToKick) {
               this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
               break;
@@ -319,7 +325,7 @@ export default {
             }
 
             const voteData = this.selectedChannel.kickVotes.find((vote) => vote.member.nickName === args[0]);
-            if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName)) {
+            if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.nickName)) {
               this.displayedError = `You have already voted to kick a user with nickname '${args[0]}' out.`;
               break;
             }
@@ -342,7 +348,7 @@ export default {
           break;
 
         case '/quit':
-          if (this.loggedUser.user === this.selectedChannel.admin) {
+          if (this.loggedUser === this.selectedChannel.admin) {
             this.deleteChannel(this.selectedChannel);
           }
           else {

@@ -33,18 +33,9 @@ const mutation: MutationTree<AllStateInterface> = {
     state.publicChannels = payload;
   },
 
-  // sendNewMessage(state, payload: {content: string, timestamp: Date, channel: object}){
-  //   const newMessage: MessageStateInterface = {
-  //     content: payload.content,
-  //     timestamp: payload.timestamp,
-  //     user: state.loggedUser.user
-  //   }
-  //   dbConn.saveMessage(newMessage, payload.channel);
-  //   const channel = state.loggedUser.channels.find((ch) => ch === payload.channel);
-  //   if (channel) {
-  //     channel.messages.push(newMessage) // TODO push to messages table only
-  //   }
-  // },
+  setMessages(state, payload: []){
+    state.channelMessages = payload;
+  },
 
   // fetchNewMessage(state, payload: {content: string, timestamp: Date, channel: object, user: object}){
   //   const newMessage: MessageStateInterface = {

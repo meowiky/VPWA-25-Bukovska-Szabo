@@ -37,6 +37,14 @@ router
       .post('/requestKickUserFromChannel', [UserController, 'requestKickUserFromChannel'])
       .as('user.requestKickUserFromChannel')
       .use(middleware.auth())
+    router
+      .get('/messages', [UserController, 'getMessages'])
+      .as('user.getMessages')
+      .use(middleware.auth())
+    router
+      .post('/messages', [UserController, 'saveMessage'])
+      .as('user.saveMessage')
+      .use(middleware.auth())
   })
   .prefix('/api')
 

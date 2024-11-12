@@ -13,7 +13,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
         commit('setToken', token);
 
         const data = await dbConn.getLoggedUser(token);
-        
+
         if (data) {
           const { user, allPublicChannels, allUsers } = data;
           commit('setLoggedUser', user);
@@ -38,7 +38,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
       if (token) {
         commit('setToken', token);
         const data = await dbConn.getLoggedUser(token);
-        
+
         if (data) {
           const { user, allPublicChannels, allUsers } = data;
           commit('setLoggedUser', user);
@@ -123,6 +123,16 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
 
   async requestKickUserFromChannel({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string, user: string}){
     await dbConn.requestKickUserFromChannel(payload.channel, payload.token, payload.user);
+    await dispatch('reloadData', payload.token);
+  },
+
+  async fetchMessages({ commit }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string}){
+    const messages = await dbConn.getMessages(payload.channel, payload.token);
+    commit('setMessages', messages);
+  },
+
+  async sendNewMessage({ dispatch }: ActionContext<AllStateInterface, StateInterface>, payload: {channel: string, token: string, message: string}){
+    await dbConn.saveMessage(payload.channel, payload.token, payload.message);
     await dispatch('reloadData', payload.token);
   }
 }

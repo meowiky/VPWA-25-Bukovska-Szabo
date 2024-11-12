@@ -26,6 +26,9 @@ const getters: GetterTree<AllStateInterface, StateInterface> = {
   },
   getToken (state) {
     return state.token
+  },
+  getMessages (state) {
+    return state.channelMessages
   }
 };
 

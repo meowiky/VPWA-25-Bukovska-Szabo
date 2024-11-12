@@ -127,13 +127,23 @@ async function joinPublicChannel(channel: string, token: string): Promise<void> 
 }
 
 // todo
-async function saveMessage(message: object, channel: object): Promise<[object, object]> {
+async function saveMessage(channel: string, token: string, message: string): Promise<void> {
   try {
-    const response = await axios.post('/api/messages', { message, channelName: channel });
-    return [response.data.message, response.data.channel];
+    await axios.post(
+      '/api/messages',
+      {
+        channelName: channel,
+        message
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   } catch (error) {
     console.error('Error saving message:', error);
-    return [message, channel];
   }
 }
 
@@ -206,6 +216,25 @@ async function requestKickUserFromChannel(channel: string, token: string, user: 
   }
 }
 
+async function getMessages(channelName: string, token: string): Promise<object[] | null> {
+  try {
+    const response = await axios.get('/api/messages', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      params: {
+        channelName
+      }
+    });
+
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Error retrieving messages:', error);
+    return null;
+  }
+}
+
 export {
   registerNewUser,
   createNewChannel,
@@ -218,5 +247,6 @@ export {
   leaveChannel,
   kickUserFromChannel,
   joinPublicChannel,
-  requestKickUserFromChannel
+  requestKickUserFromChannel,
+  getMessages,
 }

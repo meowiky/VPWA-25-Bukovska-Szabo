@@ -7,6 +7,7 @@ export interface AllStateInterface {
   usersAsMemberInterface: [];
   publicChannels: [];
   rightDrawerOpen: boolean;
+  channelMessages: [];
 }
 
 function state(): AllStateInterface {
@@ -21,6 +22,7 @@ function state(): AllStateInterface {
     usersAsMemberInterface: [],
     publicChannels: [],
     rightDrawerOpen: true,
+    channelMessages: [],
   };
 }
 

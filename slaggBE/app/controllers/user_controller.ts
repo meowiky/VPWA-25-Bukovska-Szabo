@@ -3,6 +3,7 @@ import KickRequest from '#models/kick_request'
 import User from '#models/user'
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+import Message from '#models/message'
 
 export default class UserController {
   async createNewChannel({ auth, request, response }: HttpContext) {
@@ -360,6 +361,84 @@ export default class UserController {
       console.error('Error requesting kick from channel:', error)
       return response.internalServerError({
         message: 'An error occurred while trying to request the kick.',
+        error: error.message,
+      })
+    }
+  }
+
+  async getMessages({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { channelName } = request.only(['channelName'])
+
+    try {
+      const channel = await Channel.query().where('name', channelName).preload('users').first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${channelName}' does not exist.`,
+        })
+      }
+
+      const isUserInChannel = channel.users.some((u) => u.id === user.id)
+
+      if (!isUserInChannel) {
+        return response.forbidden({
+          message: `You are not a member of the channel '${channelName}'. Access denied.`,
+        })
+      }
+
+      const messages = await channel.related('messages').query().preload('user')
+
+      const messageData = messages.map((message) => ({
+        id: message.id,
+        content: message.message,
+        createdAt: message.sentAt,
+        user: {
+          id: message.user.id,
+          nickName: message.user.nickname,
+        },
+      }))
+
+      return response.ok({
+        message: `Messages for channel '${channelName}' retrieved successfully.`,
+        data: messageData,
+      })
+    } catch (error) {
+      console.error('Error retrieving messages:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to retrieve messages.',
+        error: error.message,
+      })
+    }
+  }
+
+  async saveMessage({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { channelName, message } = request.only(['channelName', 'message'])
+
+    try {
+      const channel = await Channel.query().where('name', channelName).first()
+
+      if (!channel) {
+        return response.notFound({
+          message: `Channel with name '${channelName}' does not exist.`,
+        })
+      }
+
+      await Message.create({
+        userId: user.id,
+        channelId: channel.id,
+        message,
+        sentAt: DateTime.now(),
+      })
+
+      return response.ok({
+        message: `Message for channel '${channelName}' saved successfully.`,
+      })
+    } catch (error) {
+      console.error('Error saving message:', error)
+      return response.internalServerError({
+        message: 'An error occurred while trying to save the message.',
         error: error.message,
       })
     }
