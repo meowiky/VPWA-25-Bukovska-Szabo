@@ -470,4 +470,36 @@ export default class UserController {
       })
     }
   }
+
+  async cleanupInactiveChannels({ response }: HttpContext) {
+    try {
+      const thirtyDaysAgo = DateTime.now().minus({ days: 30 }).toISO()
+
+      const inactiveChannels = await Channel.query().where('last_active', '<', thirtyDaysAgo)
+
+      if (inactiveChannels.length === 0) {
+        return response.ok({
+          message: 'No inactive channels to delete.',
+        })
+      }
+
+      // Delete inactive channels
+      for (const channel of inactiveChannels) {
+        // Optionally, you can delete the related messages and users as well
+        await channel.related('users').detach() // Detach users from the channel
+        await channel.related('messages').query().delete() // Delete all channel messages
+        await channel.delete() // Delete the channel itself
+      }
+
+      return response.ok({
+        message: `${inactiveChannels.length} inactive channels have been deleted.`,
+      })
+    } catch (error) {
+      console.error('Error cleaning up inactive channels:', error)
+      return response.internalServerError({
+        message: 'Failed to clean up inactive channels.',
+        error: error.message,
+      })
+    }
+  }
 }

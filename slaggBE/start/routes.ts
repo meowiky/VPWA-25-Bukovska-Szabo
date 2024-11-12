@@ -49,6 +49,9 @@ router
       .get('/isUserInChannel', [UserController, 'isUserInChannel'])
       .as('user.isUserInChannel')
       .use(middleware.auth())
+    router
+      .get('/cleanupInactiveChannels', [UserController, 'cleanupInactiveChannels'])
+      .as('user.cleanupInactiveChannels')
   })
   .prefix('/api')
 
