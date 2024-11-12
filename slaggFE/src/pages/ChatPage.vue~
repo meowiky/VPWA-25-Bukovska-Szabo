@@ -140,8 +140,7 @@ export default {
       'addUserToChannel',
       'kickUserFromChannel',
       'leaveChannel',
-      'deleteChannel',
-      'createNewChannel'
+      'deleteChannel'
     ]),
 
     async initMessages() {
