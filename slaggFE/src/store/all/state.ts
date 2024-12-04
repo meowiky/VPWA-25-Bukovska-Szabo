@@ -3,7 +3,7 @@ export interface AllStateInterface {
   isUserLoggedIn: boolean;
   token: string;
   loggedUser: object;
-  selectedChannel: object;
+  selectedChannel: object | null;
   usersAsMemberInterface: [];
   publicChannels: [];
   rightDrawerOpen: boolean;
@@ -17,8 +17,7 @@ function state(): AllStateInterface {
     token: localStorage.getItem('token') || '',
     loggedUser: {
     },
-    selectedChannel: {
-    },
+    selectedChannel: null,
     usersAsMemberInterface: [],
     publicChannels: [],
     rightDrawerOpen: true,

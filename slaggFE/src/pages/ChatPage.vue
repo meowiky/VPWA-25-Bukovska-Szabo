@@ -101,7 +101,6 @@ export default {
   },
 
   created() {
-    console.log(this.allPublicChannels)
     this.initMessages();
     // this.simulateTypingMember();
   },
@@ -109,7 +108,6 @@ export default {
   watch: {
     selectedChannel(newChannel, oldChannel) {
       if (newChannel !== oldChannel) {
-        this.selectedChannel = newChannel;
         this.initMessages();
         // this.simulateTypingMember();
       }
@@ -146,6 +144,9 @@ export default {
     ]),
 
     async initMessages() {
+      if (this.selectedChannel == null){
+        return;
+      }
       await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
       if (this.selectedChannel && this.messages) {
         this.visibleMessages = this.messages.slice(-this.itemsPerPage);
