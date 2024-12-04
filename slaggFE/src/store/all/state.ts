@@ -2,7 +2,7 @@ export interface AllStateInterface {
   mentionsOnly: boolean;
   isUserLoggedIn: boolean;
   token: string;
-  loggedUser: object;
+  loggedUser: object | null;
   selectedChannel: object | null;
   usersAsMemberInterface: [];
   publicChannels: [];
@@ -15,8 +15,7 @@ function state(): AllStateInterface {
     mentionsOnly: false,
     isUserLoggedIn: false,
     token: localStorage.getItem('token') || '',
-    loggedUser: {
-    },
+    loggedUser: null,
     selectedChannel: null,
     usersAsMemberInterface: [],
     publicChannels: [],

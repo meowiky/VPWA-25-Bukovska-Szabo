@@ -30,6 +30,7 @@
 
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
+        <template v-if="loggedUser">
         <q-item-label header>Channels</q-item-label>
 
         <q-item
@@ -69,6 +70,7 @@
           </q-item-section>
           <q-item-section>Show all joinable public Channels</q-item-section>
         </q-item>
+      </template>
       </q-list>
     </q-drawer>
 
@@ -352,6 +354,7 @@ export default {
     },
 
     async logout() {
+      this.$router.push('/signin/login');
       await this.logOut(this.token);
     },
 
