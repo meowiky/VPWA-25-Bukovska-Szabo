@@ -5,6 +5,29 @@ import {AllStateInterface} from './state';
 import * as dbConn from 'src/store/all/db_conn';
 
 const actions: ActionTree<AllStateInterface, StateInterface> = {
+  async initializeAuth({ commit }: ActionContext<AllStateInterface, StateInterface>) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const data = await dbConn.getLoggedUser(token);
+
+        if (data) {
+          const { user, allPublicChannels, allUsers } = data;
+          commit('setToken', token);
+          commit('setLoggedUser', user);
+          commit('setAllPublicChannels', allPublicChannels);
+          commit('setOtherUsers', allUsers);
+          commit('toggleIsUserLoggedIn');
+        } else {
+          commit('removeToken');
+        }
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
+        commit('removeToken');
+      }
+    }
+  },
+
   async login({ commit }: ActionContext<AllStateInterface, StateInterface>, payload: { email: string; password: string }) {
     try {
       const token = await dbConn.login(payload.email, payload.password);
