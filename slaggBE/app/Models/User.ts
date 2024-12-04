@@ -12,6 +12,12 @@ export default class User extends BaseModel {
   public nickname: string
 
   @column()
+  public surname: string
+
+  @column()
+  public name: string
+
+  @column()
   public email: string
 
   @column({ serializeAs: null })
@@ -21,10 +27,10 @@ export default class User extends BaseModel {
   public state!: string
 
   @column.dateTime()
-  public registeredAt!: DateTime
+  public registeredAt: DateTime
 
   @column.dateTime()
-  public lastActiveState!: DateTime
+  public lastActiveState: DateTime
 
   @hasMany(() => Message)
   public messages: HasMany<typeof Message>
