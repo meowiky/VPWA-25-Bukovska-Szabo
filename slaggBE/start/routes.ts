@@ -26,6 +26,7 @@ Route.group(() => {
   Route.delete('/logout', 'AuthController.logout').as('auth.logout').middleware('auth')
   Route.get('/me', 'AuthController.me').as('auth.me')
 })
+.prefix('/api')
 
 Route.group(() => {
   Route.post('/createChannel', 'UserController.createNewChannel').as('user.createNewChannel').middleware('auth')

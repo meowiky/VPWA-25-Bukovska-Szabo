@@ -32,7 +32,9 @@ export default class User extends BaseModel {
   @column.dateTime()
   public lastActiveState: DateTime
 
-  @hasMany(() => Message)
+  @hasMany(() => Message, {
+    foreignKey: 'userId',
+  })
   public messages: HasMany<typeof Message>
 
   @manyToMany(() => Channel, {

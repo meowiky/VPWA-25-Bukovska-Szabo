@@ -1,9 +1,9 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 
-export default class extends BaseSchema {
+export default class KickRequests extends BaseSchema {
   protected tableName = 'kick_requests'
 
-  public async up () {
+  public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table
         .integer('channel_id')
@@ -30,12 +30,11 @@ export default class extends BaseSchema {
         .notNullable()
 
       table.timestamp('requested_at', { useTz: true }).defaultTo(this.now())
-
       table.primary(['channel_id', 'requester_id', 'target_id'])
     })
   }
 
-  public async down () {
+  public async down() {
     this.schema.dropTable(this.tableName)
   }
 }

@@ -19,10 +19,14 @@ export default class Message extends BaseModel {
   @column()
   public message: string
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, {
+    foreignKey: 'userId',
+  })
   public user: BelongsTo<typeof User>
 
-  @belongsTo(() => Channel)
+  @belongsTo(() => Channel, {
+    foreignKey: 'channelId',
+  })
   public channel: BelongsTo<typeof Channel>
 
   @afterCreate()

@@ -24,13 +24,15 @@ export default class Channel extends BaseModel {
   })
   public admin: BelongsTo<typeof User>
 
-  @hasMany(() => Message)
+  @hasMany(() => Message, {
+    foreignKey: 'channelId',
+  })
   public messages: HasMany<typeof Message>
 
   @manyToMany(() => User, {
     pivotTable: 'channel_user_pivots',
-    pivotRelatedForeignKey: 'user_id',
     pivotForeignKey: 'channel_id',
+    pivotRelatedForeignKey: 'user_id',
   })
   public users: ManyToMany<typeof User>
 }

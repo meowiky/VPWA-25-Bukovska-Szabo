@@ -28,6 +28,7 @@
     "@ruby184/adonis-socket.io": "^0.2.0",
     "i": "^0.3.7",
     "npm": "^10.9.1",
+    "pg": "^8.13.1",
     "phc-argon2": "^1.1.4",
     "proxy-addr": "^2.0.7",
     "reflect-metadata": "^0.2.2",
