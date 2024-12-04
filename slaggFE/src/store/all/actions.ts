@@ -62,7 +62,7 @@ const actions: ActionTree<AllStateInterface, StateInterface> = {
       const success = await dbConn.logout(token);
 
       if(success){
-        commit('setToken', '');
+        commit('removeToken');
         commit('setLoggedUser', null);
         commit('toggleIsUserLoggedIn');
         commit('setOtherUsers', null);

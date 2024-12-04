@@ -9,6 +9,12 @@ const mutation: MutationTree<AllStateInterface> = {
 
   setToken(state, payload: string){
     state.token = payload;
+    localStorage.setItem('token', payload);
+  },
+
+  removeToken(state){
+    state.token = '';
+    localStorage.removeItem('token');
   },
 
   toggleRightDrawerOpen(state) {

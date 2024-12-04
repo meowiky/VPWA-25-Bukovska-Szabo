@@ -14,7 +14,7 @@ function state(): AllStateInterface {
   return {
     mentionsOnly: false,
     isUserLoggedIn: false,
-    token: '',
+    token: localStorage.getItem('token') || '',
     loggedUser: {
     },
     selectedChannel: {
