@@ -22,12 +22,22 @@ export default class AuthController {
 
       return response.ok({
         message: 'Login successful',
-        token,
+        token: token.token,
       })
     } catch {
       return response.unauthorized({
         message: 'Invalid credentials',
       })
+    }
+  }
+
+  public async logout({ auth }: HttpContextContract) {
+    try {
+      await auth.use('api').logout()
+      return { message: 'Logout successful' }
+    }
+    catch {
+      return { message: 'Logout failed' }
     }
   }
 
