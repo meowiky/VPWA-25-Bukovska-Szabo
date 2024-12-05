@@ -251,6 +251,10 @@ export default {
         token: this.token
       }
       await this.leaveChannel(payload);
+
+      if (this.selectedChannel.name === channel.name) {
+        this.selectChannel(null);
+      }
     },
 
     async deleteChannelAction(channel) {

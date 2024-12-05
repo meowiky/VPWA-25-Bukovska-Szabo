@@ -106,14 +106,18 @@ export default {
   },
 
   watch: {
-    selectedChannel(newChannel, oldChannel) {
+    selectedChannel(oldChannel, newChannel) {
+      if (!newChannel) {
+        // TODO:: Clear out the message list and return to "Please select channel screen"
+        return;
+      }
       if (newChannel !== oldChannel) {
         this.initMessages();
         // this.simulateTypingMember();
       }
     },
     'loggedUser.status': function (newStatus) {
-      if (newStatus !== 'offline') {
+      if (newStatus !== 'offline' && this.selectedChannel) {
         this.initMessages();
       }
     },
