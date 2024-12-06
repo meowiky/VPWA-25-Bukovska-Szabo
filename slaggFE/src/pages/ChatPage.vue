@@ -129,6 +129,7 @@ export default {
     selectedChannel(newChannel, oldChannel) {
       if (newChannel == null) {
         this.visibleMessages = [];
+      }
 
       if (!newChannel) {
         this.visibleMessages = [];
@@ -149,33 +150,6 @@ export default {
   },
 
   methods: {
-<<<<<<< HEAD
-    ...mapMutations('all', [
-      // 'addMemberToChannel',
-      // 'kickMemberFromChannel',
-      // 'addKickVoteOrKickMember',
-      // 'leaveChannel',
-      // 'deleteChannel',
-      // 'joinChannel',
-      // 'fetchNewMessage',
-      'setSelectedChannel',
-      'toggleRightDrawerOpen',
-    ]),
-    ...mapActions('all', [
-      'fetchMessages',
-      'sendNewMessage',
-      'isUserInChannel',
-      'joinPublicChannel',
-      'addUserToChannel',
-      'kickUserFromChannel',
-      'leaveChannel',
-      'deleteChannel',
-      'createNewChannel',
-      'requestKickUserFromChannel',
-      'selectChannel',
-    ]),
-=======
->>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
 
     async initMessages() {
       if (!this.selectedChannel || !this.selectedChannel.name) {
@@ -183,25 +157,6 @@ export default {
         this.visibleMessages = [];
         return;
       }
-<<<<<<< HEAD
-
-      try {
-        await this.fetchMessages({ channel: this.selectedChannel.name, token: this.token });
-        if (this.messages) {
-          this.visibleMessages = this.messages.slice(-this.itemsPerPage);
-        }
-      } catch (error) {
-        console.error(`Failed to fetch messages for channel: ${this.selectedChannel.name}`, error);
-        // Ensure no residual messages are displayed
-        this.visibleMessages = [];
-        this.selectChannel(null); // Reset selected channel if fetch fails
-      }
-    },
-
-
-    isLoggedUser(message) {
-      return message.user.nickName === this.loggedUser.nickName;
-=======
       await this.userStore.fetchMessages(this.selectedChannel.name);
       if (this.selectedChannel && this.messages) {
         this.visibleMessages = this.messages.slice(-this.itemsPerPage);
@@ -212,7 +167,6 @@ export default {
       if (this.loggedUser) {
         return message.sender === this.loggedUser.nickName;
       }
->>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
     },
 
     handleMessage() {
@@ -416,24 +370,7 @@ export default {
           break;
         }
         case '/cancel':
-<<<<<<< HEAD
-          await this.leaveChannel({
-            name: this.selectedChannel.name,
-            token: this.token
-          });
-
-          const updatedChannels = this.loggedUser.channels.filter(c => c.name !== this.selectedChannel.name);
-          this.$store.commit('all/setLoggedUser', {
-            ...this.loggedUser,
-            channels: updatedChannels
-          });
-
-          this.visibleMessages = [];
-          this.selectChannel(null);
-
-=======
           await this.userStore.leaveChannel(this.selectedChannel.name);
->>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
           break;
 
         case '/quit':
@@ -453,10 +390,6 @@ export default {
           await this.sendMessage();
       }
       this.newMessage = '';
-    },
-
-    selectChannel(channel) {
-      this.setSelectedChannel(channel);
     },
   }
 };
