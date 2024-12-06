@@ -131,6 +131,7 @@ export default {
       // 'deleteChannel',
       // 'joinChannel',
       // 'fetchNewMessage',
+      'setSelectedChannel',
       'toggleRightDrawerOpen',
     ]),
     ...mapActions('all', [
@@ -143,7 +144,8 @@ export default {
       'leaveChannel',
       'deleteChannel',
       'createNewChannel',
-      'requestKickUserFromChannel'
+      'requestKickUserFromChannel',
+      'selectChannel',
     ]),
 
     async initMessages() {
@@ -382,6 +384,16 @@ export default {
             name: this.selectedChannel.name,
             token: this.token
           });
+
+          const updatedChannels = this.loggedUser.channels.filter(c => c.name !== this.selectedChannel.name);
+          this.$store.commit('all/setLoggedUser', {
+            ...this.loggedUser,
+            channels: updatedChannels
+          });
+
+          this.visibleMessages = [];
+          this.selectChannel(null);
+
           break;
 
         case '/quit':
@@ -404,6 +416,10 @@ export default {
           await this.sendMessage();
       }
       this.newMessage = '';
+    },
+
+    selectChannel(channel) {
+      this.setSelectedChannel(channel);
     },
   }
 };
