@@ -23,6 +23,9 @@ const mutation: MutationTree<AllStateInterface> = {
 
   setSelectedChannel(state, payload: object) {
     state.selectedChannel = payload;
+    if (!payload) {
+      state.channelMessages = [];
+    }
   },
 
   setLoggedUser(state, payload: object)

@@ -189,6 +189,7 @@ export default {
         { label: 'DND', value: 'DND' },
       ],
       rightDrawerOpenLocal: false,
+      channelIsLoading: false,
     };
   },
 
@@ -243,27 +244,63 @@ export default {
       this.createChannelDialog = false;
     },
 
-    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
-    // TODO:: We get 404 on messages get upon leaving
     async leaveChannelAction(channel) {
-      let payload = {
-        name: channel.name,
-        token: this.token
-      }
-      await this.leaveChannel(payload);
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
 
-      if (this.selectedChannel.name === channel.name) {
+      if (this.selectedChannel?.name === channel.name) {
         this.selectChannel(null);
+      }
+
+      let payload = { name: channel.name, token: this.token };
+
+      try {
+        await this.leaveChannel(payload);
+      } catch (error) {
+        console.error(`Failed to leave channel: ${channel.name}`, error);
+      } finally {
+        this.cleanUpChannelState(channel.name);
+        this.channelActionLoading = false;
       }
     },
 
     async deleteChannelAction(channel) {
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
+
+      if (this.selectedChannel?.name === channel.name) {
+        this.selectChannel(null);
+      }
+
       let payload = {
         name: channel.name,
         token: this.token
+      };
+
+      try {
+        await this.deleteChannel(payload);
+      } catch (error) {
+        console.error(`Failed to delete channel: ${channel.name}`, error);
+      } finally {
+        this.cleanUpChannelState(channel.name);
+        this.channelActionLoading = false;
       }
-      await this.deleteChannel(payload);
     },
+
+    cleanUpChannelState(channelName) {
+      const updatedChannels = this.loggedUser.channels.filter(c => c.name !== channelName);
+      this.$store.commit('all/setLoggedUser', {
+        ...this.loggedUser,
+        channels: updatedChannels
+      });
+
+      this.visibleMessages = [];
+
+      if (this.selectedChannel?.name === channelName) {
+        this.selectChannel(null);
+      }
+    },
+
 
     toggleLeftDrawer() {
       this.leftDrawerOpen = !this.leftDrawerOpen;

@@ -106,18 +106,17 @@ export default {
   },
 
   watch: {
-    selectedChannel(oldChannel, newChannel) {
-      if (!newChannel) {
-        // TODO:: Clear out the message list and return to "Please select channel screen"
-        return;
+    selectedChannel(newChannel, oldChannel) {
+      if (newChannel == null) {
+        this.visibleMessages = [];
       }
-      if (newChannel !== oldChannel) {
+      else if (newChannel !== oldChannel) {
         this.initMessages();
         // this.simulateTypingMember();
       }
     },
     'loggedUser.status': function (newStatus) {
-      if (newStatus !== 'offline' && this.selectedChannel) {
+      if (newStatus !== 'offline') {
         this.initMessages();
       }
     },
@@ -148,14 +147,25 @@ export default {
     ]),
 
     async initMessages() {
-      if (this.selectedChannel == null){
+      if (!this.selectedChannel || !this.selectedChannel.name) {
+        console.warn('No valid channel selected. Skipping message initialization.');
+        this.visibleMessages = [];
         return;
       }
-      await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
-      if (this.selectedChannel && this.messages) {
-        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+
+      try {
+        await this.fetchMessages({ channel: this.selectedChannel.name, token: this.token });
+        if (this.messages) {
+          this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+        }
+      } catch (error) {
+        console.error(`Failed to fetch messages for channel: ${this.selectedChannel.name}`, error);
+        // Ensure no residual messages are displayed
+        this.visibleMessages = [];
+        this.selectChannel(null); // Reset selected channel if fetch fails
       }
     },
+
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.nickName;
