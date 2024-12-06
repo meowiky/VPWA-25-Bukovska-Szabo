@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import {mapActions} from 'vuex';
+import { useUserStore } from 'src/stores/user';
 
 export default defineComponent({
   name: 'LoginForm',
@@ -40,8 +40,8 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('all', ['login']),
     async onSubmit() {
+      const userStore = useUserStore();
       this.errorMessage = '';
 
       if (!this.formData.email || !this.formData.password) {
@@ -50,9 +50,9 @@ export default defineComponent({
       }
 
       try {
-        const success = await this.login(this.formData);
+        const success = await userStore.login(this.formData.email, this.formData.password);
         if (success) {
-          this.$router.push('/chat'); // Navigate to the chat page
+          this.$router.push('/chat');
 
         } else {
           this.errorMessage = 'Login failed. Please check your credentials.';

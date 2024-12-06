@@ -338,10 +338,7 @@ export default class UserController {
         id: message.id,
         content: message.message,
         createdAt: message.sentAt,
-        user: {
-          id: message.user.id,
-          nickName: message.user.nickname,
-        },
+        sender: message.user.nickname
       }))
 
       return response.ok({

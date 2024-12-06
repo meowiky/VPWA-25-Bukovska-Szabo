@@ -23,11 +23,11 @@
             <q-chat-message
               v-for="(message, index) in visibleMessages"
               :key="index"
-              :name="message.user.nickName"
+              :name="message.sender"
               :text="[message.content]"
               :sent="isLoggedUser(message)"
-              :stamp="new Date(message.createdAt).toLocaleString()"
-              :bg-color="message.content.includes('@' + loggedUser.nickName) ? 'deep-orange-4' : ''"
+              :stamp="new Date(message.sentAt).toLocaleString()"
+              :bg-color="message.content.includes('@' + (loggedUser?.nickName || '')) ? 'deep-orange-4' : ''"
             />
           </q-infinite-scroll>
         </div>
@@ -66,36 +66,56 @@
   </div>
 </template>
 
-<script>
-import {mapActions, mapGetters, mapMutations} from 'vuex';
-import {AppVisibility} from 'quasar';
+<script lang="ts">
+//import {AppVisibility} from 'quasar';
+import { useUserStore } from 'src/stores/user';
+import type { Message, Member } from 'src/stores/models'
 
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore,
+    };
+  },
   data() {
     return {
       newMessage: '',
       displayedError: '',
       loading: false,
       itemsPerPage: 20,
-      visibleMessages: [],
+      visibleMessages: [] as Message[],
       simulateIncomingMessages: false,
-      typingMember: null,
+      typingMember: null as Member | null,
       fakeTypingMessage: 'This is the fake typing message.'
     };
   },
 
   computed: {
-    ...mapGetters('all', {
-      loggedUser: 'getLoggedUser',
-      selectedChannel: 'getSelectedChannel',
-      allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels',
-      mentionsOnly: 'getMentionsOnly',
-      token: 'getToken',
-      messages: 'getMessages'
-    }),
+    loggedUser() {
+      return this.userStore.loggedUser;
+    },
+    selectedChannel() {
+      return this.userStore.selectedChannel;
+    },
+    mentionsOnly() {
+      return this.userStore.mentionsOnly;
+    },
+    allUsers() {
+      return this.userStore.usersAsMemberInterface;
+    },
+    allPublicChannels() {
+      return this.userStore.publicChannels;
+    },
+    messages() {
+      return this.userStore.channelMessages;
+    },
 
     messagesCompositeKey() {
+      if (!this.loggedUser || !this.selectedChannel){
+        return '';
+      }
       return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
     }
   },
@@ -109,6 +129,12 @@ export default {
     selectedChannel(newChannel, oldChannel) {
       if (newChannel == null) {
         this.visibleMessages = [];
+
+      if (!newChannel) {
+        this.visibleMessages = [];
+        // TODO:: Clear out the message list and return to "Please select channel screen"
+        return;
+
       }
       else if (newChannel !== oldChannel) {
         this.initMessages();
@@ -123,6 +149,7 @@ export default {
   },
 
   methods: {
+<<<<<<< HEAD
     ...mapMutations('all', [
       // 'addMemberToChannel',
       // 'kickMemberFromChannel',
@@ -147,6 +174,8 @@ export default {
       'requestKickUserFromChannel',
       'selectChannel',
     ]),
+=======
+>>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
 
     async initMessages() {
       if (!this.selectedChannel || !this.selectedChannel.name) {
@@ -154,6 +183,7 @@ export default {
         this.visibleMessages = [];
         return;
       }
+<<<<<<< HEAD
 
       try {
         await this.fetchMessages({ channel: this.selectedChannel.name, token: this.token });
@@ -171,6 +201,18 @@ export default {
 
     isLoggedUser(message) {
       return message.user.nickName === this.loggedUser.nickName;
+=======
+      await this.userStore.fetchMessages(this.selectedChannel.name);
+      if (this.selectedChannel && this.messages) {
+        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+      }
+    },
+
+    isLoggedUser(message: Message) {
+      if (this.loggedUser) {
+        return message.sender === this.loggedUser.nickName;
+      }
+>>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
     },
 
     handleMessage() {
@@ -184,59 +226,59 @@ export default {
     },
 
     toggleSimulatedMessages() {
-      if (this.simulateIncomingMessages) {
-        clearInterval(this.simulationInterval);
-        this.simulateIncomingMessages = false;
-      } else {
-        this.simulationInterval = setInterval(this.simulateIncomingMessage, 5000);
-        this.simulateIncomingMessages = true;
-      }
+      // if (this.simulateIncomingMessages) {
+      //   clearInterval(this.simulationInterval);
+      //   this.simulateIncomingMessages = false;
+      // } else {
+      //   this.simulationInterval = setInterval(this.simulateIncomingMessage, 5000);
+      //   this.simulateIncomingMessages = true;
+      // }
     },
 
     simulateIncomingMessage() {
-      const otherUsers = this.selectedChannel.users.filter(user => user.nickName !== this.loggedUser.nickName);
-      const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-      const mentionLoggedUser = Math.random() < 0.5;
+      // const otherUsers = this.selectedChannel.users.filter(user => user.nickName !== this.loggedUser.nickName);
+      // const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+      // const mentionLoggedUser = Math.random() < 0.5;
 
-      let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
-      if (mentionLoggedUser) {
-        randomMessageContent = `Hi @${this.loggedUser.nickName} how are you?`;
-      }
+      // let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
+      // if (mentionLoggedUser) {
+      //   randomMessageContent = `Hi @${this.loggedUser.nickName} how are you?`;
+      // }
 
-      const incomingMessage = {
-        user: randomUser,
-        content: randomMessageContent,
-        timestamp: new Date(),
-        channel: this.selectedChannel
-      };
+      // const incomingMessage = {
+      //   user: randomUser,
+      //   content: randomMessageContent,
+      //   timestamp: new Date(),
+      //   channel: this.selectedChannel
+      // };
 
-      this.fetchNewMessage(incomingMessage)
+      // this.fetchNewMessage(incomingMessage)
 
-      if (this.loggedUser.status === 'offline') {
-        return;
-      }
-      this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
+      // if (this.loggedUser.status === 'offline') {
+      //   return;
+      // }
+      // this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
 
-      // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
+      // // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
-      if (this.loggedUser.status === 'DND') {
-        return;
-      }
+      // if (this.loggedUser.status === 'DND') {
+      //   return;
+      // }
 
-      if (AppVisibility.appVisible) {
-        if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.nickName)) {
-          this.$q.notify({
-            message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
-            color: 'info',
-            position: 'top',
-            timeout: 3000
-          });
-        }
-      }
+      // if (AppVisibility.appVisible) {
+      //   if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.nickName)) {
+      //     this.$q.notify({
+      //       message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
+      //       color: 'info',
+      //       position: 'top',
+      //       timeout: 3000
+      //     });
+      //   }
+      // }
     },
 
     loadMoreMessages() {
-      if (this.loading) return;
+      if (this.loading || !this.messages) return;
       this.loading = true;
 
 
@@ -253,57 +295,57 @@ export default {
     },
 
     async sendMessage() {
-      let payload = {
-        message: this.newMessage,
-        token: this.token,
-        channel: this.selectedChannel.name
+      if (this.selectedChannel) {
+        await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
+        await this.userStore.fetchMessages(this.selectedChannel.name);
+        if (this.messages) {
+          this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
+        }
+        this.newMessage = '';
       }
-      await this.sendNewMessage(payload);
-      await this.fetchMessages({channel: this.selectedChannel.name, token: this.token})
-      this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
-      this.newMessage = '';
     },
 
     simulateTypingMember() {
-      const otherMembers = this.selectedChannel.users.filter(
-        user => user.nickName !== this.loggedUser.nickName
-      );
-      if (otherMembers.length === 0) return;
+      // const otherMembers = this.selectedChannel.users.filter(
+      //   user => user.nickName !== this.loggedUser.nickName
+      // );
+      // if (otherMembers.length === 0) return;
 
-      this.typingMember = otherMembers[Math.floor(Math.random() * otherMembers.length)];
-      this.showTypingBanner = true;
+      // this.typingMember = otherMembers[Math.floor(Math.random() * otherMembers.length)];
+      // this.showTypingBanner = true;
     },
 
-    async handleCommand(commandString) {
+    async handleCommand(commandString: string) {
       const [command, ...args] = commandString.split(' ');
 
+      if(!command || !this.selectedChannel || !this.loggedUser){
+        return;
+      }
+
       switch (command.toLowerCase()) {
-        case '/join':
-          const isAlreadyInChannel = this.loggedUser.channels.some((userChannel) => userChannel.name === args[0]);
+        case '/join': {
+          const channelName = args[0] || '';
+          if (channelName == ''){
+            await this.sendMessage();
+            break;
+          }
+          const isAlreadyInChannel = this.loggedUser.channels.some((userChannel) => userChannel.name === channelName);
 
           if (isAlreadyInChannel) {
             this.displayedError = 'You are already in this channel.';
             break;
           }
 
-          let payload = {
-            token: this.token,
-            channel: args[0]
-          }
-
-          const channelToJoin = this.allPublicChannels.find((channel) => channel.name === args[0]);
+          const channelToJoin = this.allPublicChannels.find((channel) => channel.name === channelName);
           if (!channelToJoin) {
-            let payload = {
-              name: args[0],
-              isPrivate: args.length > 1 && args[1] === '[private]',
-              token: this.token
-            }
-            await this.createNewChannel(payload);
+            const isPrivate = args.length > 1 && args[1] === '[private]';
+              
+            await this.userStore.createNewChannel(channelName, isPrivate);
             break;
           }
 
           let alreadyInChannel = false;
-          await this.isUserInChannel(payload).then((isInChannel) => {
+          await this.userStore.isUserInChannel(channelName).then((isInChannel) => {
             if (isInChannel.data) {
               this.displayedError = 'You are already a member of this channel.';
               alreadyInChannel = true;
@@ -311,75 +353,70 @@ export default {
           })
           if (alreadyInChannel) { break; }
 
-          this.joinPublicChannel(payload);
+          this.userStore.joinPublicChannel(channelName);
           break;
-
-        case '/invite':
+        }
+        case '/invite': {
           this.displayedError = '';
+          const nickName = args[0] || '';
+          if (nickName == ''){
+            await this.sendMessage();
+            break;
+          }
           if (!this.selectedChannel.isPrivate || this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
-            const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
+            const userToInvite = this.allUsers.find(user => user.nickName === nickName);
             if (!userToInvite) {
-              this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
+              this.displayedError = `User with nickname '${nickName}' doesn't exist.`;
               break;
             }
 
-            const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === args[0]);
+            const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === nickName);
 
             if (isAlreadyMember) {
-              this.displayedError = `User '${args[0]}' is already a member of this channel.`;
+              this.displayedError = `User '${nickName}' is already a member of this channel.`;
               break;
             }
-            let payload = {
-              user: userToInvite.nickName,
-              channel: this.selectedChannel.name,
-              token: this.token
-            }
-            await this.addUserToChannel(payload);
+            await this.userStore.addUserToChannel(this.selectedChannel.name, userToInvite.nickName);
           }
           else {
             this.displayedError = 'You are not allowed to invite new members to this channel.';
           }
           break;
-
+        }
         // TODO:: Admin kick works but check vote kick
-        case '/kick':
-          if (args[0] === this.loggedUser.nickName) {
+        case '/kick': {
+          const nickName = args[0] || '';
+          if (nickName == ''){
+            await this.sendMessage();
+            break;
+          }
+          if (nickName === this.loggedUser.nickName) {
             this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
             break;
           }
-          const memberToKick = this.selectedChannel.users.find((member) => member.nickName === args[0]);
+          const memberToKick = this.selectedChannel.users.find((member) => member.nickName === nickName);
           if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
             if (!memberToKick) {
-              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              this.displayedError = `User with nickname '${nickName}' is not in this channel.`;
               break;
             }
-            let payload = {
-              user: memberToKick.nickName,
-              channel: this.selectedChannel.name,
-              token: this.token
-            }
-            await this.kickUserFromChannel(payload);
+            await this.userStore.kickUserFromChannel(this.selectedChannel.name, memberToKick.nickName);
           }
           else if (!this.selectedChannel.isPrivate) {
             this.displayedError = 'You are not the admin of this channel, so you will only vote to kick a member.';
             if (!memberToKick) {
-              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              this.displayedError = `User with nickname '${nickName}' is not in this channel.`;
               break;
             }
-
-            let payload = {
-              user: memberToKick.nickName,
-              channel: this.selectedChannel.name,
-              token: this.token
-            };
-            await this.requestKickUserFromChannel(payload);
+            await this.userStore.requestKickUserFromChannel(this.selectedChannel.name, memberToKick.nickName);
           }
           else {
             this.displayedError = 'You are not allowed to kick or request to kick a member out of this channel.';
           }
           break;
-
+        }
         case '/cancel':
+<<<<<<< HEAD
           await this.leaveChannel({
             name: this.selectedChannel.name,
             token: this.token
@@ -394,14 +431,14 @@ export default {
           this.visibleMessages = [];
           this.selectChannel(null);
 
+=======
+          await this.userStore.leaveChannel(this.selectedChannel.name);
+>>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
           break;
 
         case '/quit':
           if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
-            await this.deleteChannel({
-              name: this.selectedChannel.name,
-              token: this.token
-            });
+            await this.userStore.deleteChannel(this.selectedChannel.name);
           }
           else {
             this.displayedError = 'You are not admin of this channel, so you can not delete it.';
@@ -409,7 +446,7 @@ export default {
           break;
 
         case '/list':
-          this.toggleRightDrawerOpen();
+          this.userStore.toggleRightDrawerOpen();
           break;
 
         default:

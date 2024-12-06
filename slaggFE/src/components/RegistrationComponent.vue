@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import {mapActions} from 'vuex';
+import { useUserStore } from 'src/stores/user';
 
 export default defineComponent({
   name: 'RegisterForm',
@@ -47,7 +47,6 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions('all', ['register']),
     async onSubmit() {
       this.errorMessage = '';
 
@@ -56,7 +55,8 @@ export default defineComponent({
         return;
       }
       try {
-        const success = await this.register(this.formData);
+        const userStore = useUserStore();
+        const success = await userStore.register(this.formData.username, this.formData.email, this.formData.password);
         if (success) {
           this.$router.push('/chat');
 
@@ -67,7 +67,6 @@ export default defineComponent({
         console.error('register error:', error);
         this.errorMessage = 'Registration failed.';
       }
-      this.$router.push('/chat');
 
       this.formData = {
         username: '',

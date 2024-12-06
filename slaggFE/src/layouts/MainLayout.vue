@@ -87,12 +87,12 @@
             </q-item-section>
 
             <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
-              <q-btn dense flat icon="delete" color="negative" v-if="this.loggedUser.nickName === this.selectedChannel.admin.nickName" @click="kickMember(member.nickName)" />
-              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
+              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.nickName === selectedChannel.admin.nickName" @click="kickMember(member.nickName)" />
+              <q-btn dense flat icon="delete" v-else-if="loggedUser && !selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
-          <template v-if="!selectedChannel.isPrivate || loggedUser.nickName === selectedChannel.admin.nickName">
+          <template v-if="!selectedChannel.isPrivate || (loggedUser && loggedUser.nickName === selectedChannel.admin.nickName)">
             <q-item-label header>Invite User</q-item-label>
 
             <q-item>
@@ -168,10 +168,18 @@
   </q-layout>
 </template>
 
-<script>
-import { mapGetters, mapMutations, mapActions } from 'vuex';
+<script lang="ts">
+import { useUserStore } from 'src/stores/user';
+import type { Member, Channel } from 'src/stores/models'
 
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore,
+    };
+  },
   data() {
     return {
       createChannelDialog: false,
@@ -208,48 +216,56 @@ export default {
   },
 
   computed: {
-    ...mapGetters('all', {
-      loggedUser: 'getLoggedUser',
-      selectedChannel: 'getSelectedChannel',
-      isUserLoggedIn: 'isUserLoggedIn',
-      allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels',
-      rightDrawerOpen: 'getRightDrawerOpen',
-      token: 'getToken',
-    }),
+    loggedUser() {
+      return this.userStore.loggedUser;
+    },
+    selectedChannel() {
+      return this.userStore.selectedChannel;
+    },
+    isUserLoggedIn() {
+      return this.userStore.isUserLoggedIn;
+    },
+    allUsers() {
+      return this.userStore.usersAsMemberInterface;
+    },
+    allPublicChannels() {
+      return this.userStore.publicChannels;
+    },
+    rightDrawerOpen() {
+      return this.userStore.rightDrawerOpen;
+    },
     filteredPublicChannels() {
+      if (!this.loggedUser || !this.loggedUser.channels) {
+        return this.allPublicChannels;
+      }
       return this.allPublicChannels.filter(
-        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+        channel => !this.loggedUser?.channels.some(userChannel => userChannel.name === channel.name)
       );
     },
   },
 
   methods: {
-    ...mapMutations('all', [
-      'toggleIsUserLoggedIn',
-      'setSelectedChannel',
-      'setMentionsOnly',
-      'setUserStatus',
-      'toggleRightDrawerOpen'
-    ]),
-    ...mapActions('all', ['logOut', 'reloadData', 'createNewChannel', 'deleteChannel', 'leaveChannel', 'kickUserFromChannel', 'addUserToChannel', 'joinPublicChannel', 'requestKickUserFromChannel']),
-
     async createChannel() {
-      let payload = {
-        name: this.newChannelName,
-        isPrivate: this.isPrivate,
-        token: this.token
-      }
-      await this.createNewChannel(payload);
+      await this.userStore.createNewChannel(this.newChannelName, this.isPrivate);
       this.createChannelDialog = false;
     },
 
+<<<<<<< HEAD
     async leaveChannelAction(channel) {
       if (this.channelActionLoading) return;
       this.channelActionLoading = true;
 
       if (this.selectedChannel?.name === channel.name) {
         this.selectChannel(null);
+=======
+    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
+    // TODO:: We get 404 on messages get upon leaving
+    async leaveChannelAction(channel: Channel) {
+      await this.userStore.leaveChannel(channel.name);
+
+      if (this.selectedChannel && this.selectedChannel.name === channel.name) {
+        this.userStore.setSelectedChannel(null);
+>>>>>>> 5f12848 (switched from vuex to pinia bcs its more comfortable to work with + changed logic in FE and a lot of small things)
       }
 
       let payload = { name: channel.name, token: this.token };
@@ -264,27 +280,8 @@ export default {
       }
     },
 
-    async deleteChannelAction(channel) {
-      if (this.channelActionLoading) return;
-      this.channelActionLoading = true;
-
-      if (this.selectedChannel?.name === channel.name) {
-        this.selectChannel(null);
-      }
-
-      let payload = {
-        name: channel.name,
-        token: this.token
-      };
-
-      try {
-        await this.deleteChannel(payload);
-      } catch (error) {
-        console.error(`Failed to delete channel: ${channel.name}`, error);
-      } finally {
-        this.cleanUpChannelState(channel.name);
-        this.channelActionLoading = false;
-      }
+    async deleteChannelAction(channel: Channel) {
+      await this.userStore.deleteChannel(channel.name);
     },
 
     cleanUpChannelState(channelName) {
@@ -307,7 +304,7 @@ export default {
     },
 
     toggleRightDrawer() {
-      this.toggleRightDrawerOpen();
+      this.userStore.toggleRightDrawerOpen();
     },
 
     openCreateChannelDialog() {
@@ -318,94 +315,86 @@ export default {
       this.publicChannelsDialog = true;
     },
 
-    selectChannel(channel) {
-      this.setSelectedChannel(channel);
+    async selectChannel(channel: Channel) {
+      await this.userStore.setSelectedChannel(channel);
     },
 
-    async joinChannel(channel) {
-      let payload = {
-        channel: channel,
-        token: this.token
-      }
-      await this.joinPublicChannel(payload)
+    async joinChannel(channel: string) {
+      await this.userStore.joinPublicChannel(channel)
       this.publicChannelsDialog = false;
     },
 
-    async kickMember(member) {
-      let payload = {
-        channel: this.selectedChannel.name,
-        token: this.token,
-        user: member
-      };
-      await this.kickUserFromChannel(payload)
-      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
-      this.selectChannel(ch)
+    async kickMember(member: string) {
+      if(!this.selectedChannel || !this.loggedUser){
+        return;
+      }
+      await this.userStore.kickUserFromChannel(this.selectedChannel.name, member);
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
     async inviteUser() {
-      // this.inviteError = '';
+      this.inviteError = '';
 
-      // const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
-      // if (!userToInvite) {
-      //   this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
-      //   return;
-      // }
-
-      // const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === this.inviteNickName);
-
-      // if (isAlreadyMember) {
-      //   this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
-      //   return;
-      // }
-      let payload = {
-        channel: this.selectedChannel.name,
-        token: this.token,
-        user: this.inviteNickName
+      const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
+      if (!userToInvite) {
+        this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
+        return;
       }
-      await this.addUserToChannel(payload);
+      if (!this.selectedChannel) {
+        return;
+      }
+      const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === this.inviteNickName);
+
+      if (isAlreadyMember) {
+        this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
+        return;
+      }
+      await this.userStore.addUserToChannel(this.selectedChannel.name, this.inviteNickName);
       this.inviteNickName = '';
-      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
-      this.selectChannel(ch)
+      const ch = this.loggedUser?.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
-    alreadyVotedFor(member) {
+    alreadyVotedFor(member: Member) {
+      if (!member.kickRequests || member.kickRequests.length == 0) {
+        return false;
+      }
       return member.kickRequests.some(
-        (request) => request.requesterNickName === this.loggedUser.nickName
+        (request) => request.requesterNickName === this.loggedUser?.nickName
       );
     },
 
-    getVoteCount(member) {
+    getVoteCount(member: Member) {
+      if (!member.kickRequests) {
+        return 0;
+      }
       return member.kickRequests.length;
     },
 
-    async requestKick(member) {
+    async requestKick(member: Member) {
       if (this.alreadyVotedFor(member)) {
         return;
       }
-
-      let payload = {
-        channel: this.selectedChannel.name,
-        token: this.token,
-        user: member.nickName
-      };
-
-      await this.requestKickUserFromChannel(payload);
-      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel.name);
-      this.selectChannel(ch)
+      if (!this.selectedChannel || !this.loggedUser || !this.loggedUser.channels) {
+        return;
+      }
+      await this.userStore.requestKickUserFromChannel(this.selectedChannel.name, member.nickName);
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
     async logout() {
       this.$router.push('/signin/login');
-      await this.logOut(this.token);
+      await this.userStore.logout();
     },
 
     toggleMentionsOnly() {
-      const currentValue = this.mentionsOnly;
-      this.setMentionsOnly(currentValue);
+      
     },
 
-    updateUserStatus (value) {
-      this.setUserStatus(value);
+    updateUserStatus (value: string) {
+      console.log(value);
     }
   },
 };
