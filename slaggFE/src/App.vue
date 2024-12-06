@@ -2,8 +2,10 @@
   <router-view />
 </template>
 
-<script setup lang="ts">
-defineOptions({
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
   name: 'App'
 });
 </script>

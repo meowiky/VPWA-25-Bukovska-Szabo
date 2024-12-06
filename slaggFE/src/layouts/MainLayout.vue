@@ -3,7 +3,7 @@
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title v-if="!isMobile">
+        <q-toolbar-title>
           <q-avatar>
             <img src="https://i.imgur.com/u7bezXG.png" alt="Slagg">
           </q-avatar>
@@ -30,6 +30,7 @@
 
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
+        <template v-if="loggedUser">
         <q-item-label header>Channels</q-item-label>
 
         <q-item
@@ -37,7 +38,7 @@
           v-for="channel in loggedUser.channels"
           :key="channel.name"
           @click="selectChannel(channel)"
-          :class="{ 'selected-channel': channel === selectedChannel }">
+          :class="{ 'selected-channel': selectedChannel && channel.name === selectedChannel.name }">
           <q-item-section>
             <q-item-label>{{ channel.name }}</q-item-label>
             <q-item-label caption>
@@ -49,7 +50,7 @@
             <q-btn
               dense
               flat
-              v-if="channel.admin === loggedUser.user"
+              v-if="channel.admin.email === loggedUser.email"
               icon="delete"
               color="negative"
               @click="deleteChannelAction(channel)"
@@ -69,28 +70,29 @@
           </q-item-section>
           <q-item-section>Show all joinable public Channels</q-item-section>
         </q-item>
+      </template>
       </q-list>
     </q-drawer>
 
     <q-drawer show-if-above v-model="rightDrawerOpenLocal" @update:model-value="toggleRightDrawer" side="right" bordered>
       <q-list>
         <q-item-label header>Channel Members</q-item-label>
-        <template v-if="selectedChannel && selectedChannel.members.length > 0">
-          <q-item v-for="member in selectedChannel.members" :key="member.nickName">
+        <template v-if="selectedChannel">
+          <q-item v-for="member in selectedChannel.users" :key="member.nickName">
             <q-item-section>
               <q-item-label>{{ member.nickName }}</q-item-label>
               <q-item-label caption>
-                {{ member === selectedChannel.admin ? 'Admin' : 'Member' }} - Status: {{ member.status }}
+                {{ member.nickName === selectedChannel.admin.nickName ? 'Admin' : 'Member' }} - Status: {{ member.status }}
               </q-item-label>
             </q-item-section>
 
-            <q-item-section side v-if="member !== selectedChannel.admin">
-              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.user === selectedChannel.admin" @click="kickMember(member)" />
-              <q-btn dense flat icon="delete" v-else-if="!selectedChannel.isPrivate && member !== loggedUser.user" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
+            <q-item-section side v-if="member.nickName !== selectedChannel.admin.nickName">
+              <q-btn dense flat icon="delete" color="negative" v-if="loggedUser.nickName === selectedChannel.admin.nickName" @click="kickMember(member.nickName)" />
+              <q-btn dense flat icon="delete" v-else-if="loggedUser && !selectedChannel.isPrivate && member.nickName !== loggedUser.nickName" :color="alreadyVotedFor(member) ? 'grey-5' : 'warning'" :disable="alreadyVotedFor(member)" @click="requestKick(member)" />
               <q-badge v-if="getVoteCount(member) > 0" color="orange">{{ getVoteCount(member) }} / 3</q-badge>
             </q-item-section>
           </q-item>
-          <template v-if="!selectedChannel.isPrivate || loggedUser.user === selectedChannel.admin">
+          <template v-if="!selectedChannel.isPrivate || (loggedUser && loggedUser.nickName === selectedChannel.admin.nickName)">
             <q-item-label header>Invite User</q-item-label>
 
             <q-item>
@@ -134,7 +136,7 @@
             <q-item v-for="channel in filteredPublicChannels" :key="channel.name">
               <q-item-section>{{ channel.name }}</q-item-section>
               <q-item-section side>
-                <q-btn icon="add" @click="joinPublicChannel(channel)" />
+                <q-btn icon="add" @click="joinChannel(channel.name)" />
               </q-item-section>
             </q-item>
           </q-list>
@@ -166,10 +168,18 @@
   </q-layout>
 </template>
 
-<script>
-import { mapGetters, mapMutations } from 'vuex';
+<script lang="ts">
+import { useUserStore } from 'src/stores/user';
+import type { Member, Channel } from 'src/stores/models'
 
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore,
+    };
+  },
   data() {
     return {
       createChannelDialog: false,
@@ -187,17 +197,8 @@ export default {
         { label: 'DND', value: 'DND' },
       ],
       rightDrawerOpenLocal: false,
-      isMobile: false,
+      channelIsLoading: false,
     };
-  },
-
-  mounted() {
-    this.updateIsMobile();
-    window.addEventListener('resize', this.updateIsMobile);
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('resize', this.updateIsMobile);
   },
 
   watch: {
@@ -206,68 +207,84 @@ export default {
     },
     rightDrawerOpen(newVal) {
       this.rightDrawerOpenLocal = newVal;
+    },
+    loggedUser(newVal) {
+      if (newVal === null) {
+        this.$router.push('/signin/login');
+      }
     }
   },
 
   computed: {
-    ...mapGetters('all', {
-      loggedUser: 'getLoggedUser',
-      selectedChannel: 'getSelectedChannel',
-      isUserLoggedIn: 'isUserLoggedIn',
-      allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels',
-      rightDrawerOpen: 'getRightDrawerOpen',
-    }),
+    loggedUser() {
+      return this.userStore.loggedUser;
+    },
+    selectedChannel() {
+      return this.userStore.selectedChannel;
+    },
+    isUserLoggedIn() {
+      return this.userStore.isUserLoggedIn;
+    },
+    allUsers() {
+      return this.userStore.usersAsMemberInterface;
+    },
+    allPublicChannels() {
+      return this.userStore.publicChannels;
+    },
+    rightDrawerOpen() {
+      return this.userStore.rightDrawerOpen;
+    },
     filteredPublicChannels() {
+      if (!this.loggedUser || !this.loggedUser.channels) {
+        return this.allPublicChannels;
+      }
       return this.allPublicChannels.filter(
-        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
+        channel => !this.loggedUser?.channels.some(userChannel => userChannel.name === channel.name)
       );
     },
   },
 
   methods: {
-    ...mapMutations('all', [
-      'toggleIsUserLoggedIn',
-      'setSelectedChannel',
-      'createNewChannel',
-      'leaveChannel',
-      'deleteChannel',
-      'kickMemberFromChannel',
-      'addMemberToChannel',
-      'addKickVoteOrKickMember',
-      'joinChannel',
-      'setMentionsOnly',
-      'setUserStatus',
-      'toggleRightDrawerOpen'
-    ]),
-
-    updateIsMobile() {
-      this.isMobile = window.innerWidth <= 600;
-    },
-
-    createChannel() {
-      let payload = {
-        name: this.newChannelName,
-        isPrivate: this.isPrivate
-      }
-      this.createNewChannel(payload);
+    async createChannel() {
+      await this.userStore.createNewChannel(this.newChannelName, this.isPrivate);
       this.createChannelDialog = false;
     },
 
-    leaveChannelAction(channel) {
-      this.leaveChannel(channel);
+    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
+    // TODO:: We get 404 on messages get upon leaving
+    async leaveChannelAction(channel: Channel) {
+      await this.userStore.leaveChannel(channel.name);
+
+      if (this.selectedChannel && this.selectedChannel.name === channel.name) {
+        this.userStore.setSelectedChannel(null);
+      }
     },
 
-    deleteChannelAction(channel) {
-      this.deleteChannel(channel);
+    async deleteChannelAction(channel: Channel) {
+      await this.userStore.deleteChannel(channel.name);
     },
+
+    // cleanUpChannelState(channelName) {
+    //   const updatedChannels = this.loggedUser.channels.filter(c => c.name !== channelName);
+    //   this.$store.commit('all/setLoggedUser', {
+    //     ...this.loggedUser,
+    //     channels: updatedChannels
+    //   });
+
+    //   this.visibleMessages = [];
+
+    //   if (this.selectedChannel?.name === channelName) {
+    //     this.selectChannel(null);
+    //   }
+    // },
+
 
     toggleLeftDrawer() {
       this.leftDrawerOpen = !this.leftDrawerOpen;
     },
 
     toggleRightDrawer() {
-      this.toggleRightDrawerOpen();
+      this.userStore.toggleRightDrawerOpen();
     },
 
     openCreateChannelDialog() {
@@ -278,24 +295,25 @@ export default {
       this.publicChannelsDialog = true;
     },
 
-    selectChannel(channel) {
-      this.setSelectedChannel(channel);
+    async selectChannel(channel: Channel) {
+      await this.userStore.setSelectedChannel(channel);
     },
 
-    joinPublicChannel(channel) {
-      this.joinChannel(channel);
+    async joinChannel(channel: string) {
+      await this.userStore.joinPublicChannel(channel)
       this.publicChannelsDialog = false;
     },
 
-    kickMember(member) {
-      let payload = {
-        member: member,
-        channel: this.selectedChannel,
+    async kickMember(member: string) {
+      if(!this.selectedChannel || !this.loggedUser){
+        return;
       }
-      this.kickMemberFromChannel(payload);
+      await this.userStore.kickUserFromChannel(this.selectedChannel.name, member);
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
-    inviteUser() {
+    async inviteUser() {
       this.inviteError = '';
 
       const userToInvite = this.allUsers.find(user => user.nickName === this.inviteNickName);
@@ -303,64 +321,60 @@ export default {
         this.inviteError = `User with nickname '${this.inviteNickName}' doesn't exist.`;
         return;
       }
-
-      const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === this.inviteNickName);
+      if (!this.selectedChannel) {
+        return;
+      }
+      const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === this.inviteNickName);
 
       if (isAlreadyMember) {
         this.inviteError = `User '${this.inviteNickName}' is already a member of this channel.`;
         return;
       }
-      let payload = {
-        member: userToInvite,
-        channel: this.selectedChannel
-      }
-      this.addMemberToChannel(payload);
+      await this.userStore.addUserToChannel(this.selectedChannel.name, this.inviteNickName);
       this.inviteNickName = '';
+      const ch = this.loggedUser?.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
-    alreadyVotedFor(member) {
-      const voteData = this.selectedChannel.kickVotes.find(
-        (vote) => vote.member.nickName === member.nickName
-      );
-
-      if (voteData) {
-        return voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName);
+    alreadyVotedFor(member: Member) {
+      if (!member.kickRequests || member.kickRequests.length == 0) {
+        return false;
       }
-      return false;
-    },
-
-    getVoteCount(member) {
-      const voteData = this.selectedChannel.kickVotes.find(
-        (vote) => vote.member.nickName === member.nickName
+      return member.kickRequests.some(
+        (request) => request.requesterNickName === this.loggedUser?.nickName
       );
-      return voteData ? voteData.votes.length : 0;
     },
 
-    requestKick(member) {
+    getVoteCount(member: Member) {
+      if (!member.kickRequests) {
+        return 0;
+      }
+      return member.kickRequests.length;
+    },
+
+    async requestKick(member: Member) {
       if (this.alreadyVotedFor(member)) {
         return;
       }
-
-      let payload = {
-        member: member,
-        channel: this.selectedChannel
-      };
-
-      this.addKickVoteOrKickMember(payload);
+      if (!this.selectedChannel || !this.loggedUser || !this.loggedUser.channels) {
+        return;
+      }
+      await this.userStore.requestKickUserFromChannel(this.selectedChannel.name, member.nickName);
+      const ch = this.loggedUser.channels.find(channel => channel.name === this.selectedChannel?.name) || null;
+      await this.userStore.setSelectedChannel(ch)
     },
 
-    logout() {
-      this.toggleIsUserLoggedIn();
+    async logout() {
       this.$router.push('/signin/login');
+      await this.userStore.logout();
     },
 
     toggleMentionsOnly() {
-      const currentValue = this.mentionsOnly;
-      this.setMentionsOnly(currentValue);
+      
     },
 
-    updateUserStatus (value) {
-      this.setUserStatus(value);
+    updateUserStatus (value: string) {
+      console.log(value);
     }
   },
 };

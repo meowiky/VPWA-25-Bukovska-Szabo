@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { mapMutations } from 'vuex';
+import { useUserStore } from 'src/stores/user';
 
 export default defineComponent({
   name: 'RegisterForm',
@@ -47,19 +47,26 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn']),
-    onSubmit() {
+    async onSubmit() {
       this.errorMessage = '';
 
       if (!this.formData.username || !this.formData.email || !this.formData.password) {
         this.errorMessage = 'Please fill in all fields';
         return;
       }
+      try {
+        const userStore = useUserStore();
+        const success = await userStore.register(this.formData.username, this.formData.email, this.formData.password);
+        if (success) {
+          this.$router.push('/chat');
 
-      console.log('Registering...', this.formData);
-      this.toggleIsUserLoggedIn();
-      this.$router.push('/chat');
-      // TODO:: Call registration API
+        } else {
+          this.errorMessage = 'Registration failed.';
+        }
+      } catch (error) {
+        console.error('register error:', error);
+        this.errorMessage = 'Registration failed.';
+      }
 
       this.formData = {
         username: '',

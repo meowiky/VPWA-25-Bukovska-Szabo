@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import {mapActions, mapMutations} from 'vuex';
+import { useUserStore } from 'src/stores/user';
 
 export default defineComponent({
   name: 'LoginForm',
@@ -40,9 +40,8 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapMutations('all', ['toggleIsUserLoggedIn']),
-    ...mapActions('all', ['login']),
     async onSubmit() {
+      const userStore = useUserStore();
       this.errorMessage = '';
 
       if (!this.formData.email || !this.formData.password) {
@@ -51,12 +50,9 @@ export default defineComponent({
       }
 
       try {
-        const success = await this.login(this.formData);
+        const success = await userStore.login(this.formData.email, this.formData.password);
         if (success) {
-          this.toggleIsUserLoggedIn(); // Call the mutation to update user login state
-          this.$router.push('/chat'); // Navigate to the chat page
-
-          console.log(success); // TODO:: Remove debug log
+          this.$router.push('/chat');
 
         } else {
           this.errorMessage = 'Login failed. Please check your credentials.';

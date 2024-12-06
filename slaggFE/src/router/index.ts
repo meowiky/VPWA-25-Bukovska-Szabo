@@ -5,11 +5,10 @@ import {
   createWebHashHistory,
   createWebHistory,
 } from 'vue-router';
-import { StateInterface } from '../store';
 import routes from './routes';
-import { Store } from 'vuex';
+import { useUserStore } from 'src/stores/user';
 
-export default route<StateInterface>(function ({ store }: { store: Store<StateInterface> }) {
+export default route(function () {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
     : (process.env.VUE_ROUTER_MODE === 'history' ? createWebHistory : createWebHashHistory);
@@ -24,7 +23,8 @@ export default route<StateInterface>(function ({ store }: { store: Store<StateIn
   });
 
   Router.beforeEach((to, from, next) => {
-    const isUserLoggedIn = store.getters['all/isUserLoggedIn'];
+    const userStore = useUserStore();
+    const isUserLoggedIn = userStore.isUserLoggedIn;
 
     if (!isUserLoggedIn && to.path !== '/signin/login' && to.path !== '/signin/register') {
       next('/signin/login');

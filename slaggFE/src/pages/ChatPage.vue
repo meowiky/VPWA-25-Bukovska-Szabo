@@ -1,6 +1,7 @@
 <template>
   <div class="chat-page" >
-    <div v-if="!selectedChannel.name" class="select-channel-message">
+<!--    <div v-if="true" class="select-channel-message">-->
+     <div v-if="!selectedChannel || !selectedChannel.name" class="select-channel-message">
       <q-card class="q-pa-md">
         <q-card-section>
           <div class="text-h6">Please select a channel</div>
@@ -22,11 +23,11 @@
             <q-chat-message
               v-for="(message, index) in visibleMessages"
               :key="index"
-              :name="message.user.nickName"
+              :name="message.sender"
               :text="[message.content]"
               :sent="isLoggedUser(message)"
-              :stamp="new Date(message.timestamp).toLocaleString()"
-              :bg-color="message.content.includes('@' + loggedUser.user.nickName) ? 'deep-orange-4' : ''"
+              :stamp="new Date(message.sentAt).toLocaleString()"
+              :bg-color="message.content.includes('@' + (loggedUser?.nickName || '')) ? 'deep-orange-4' : ''"
             />
           </q-infinite-scroll>
         </div>
@@ -51,70 +52,97 @@
             <q-btn @click="handleMessage" label="Send" color="primary" />
           </div>
 
-          <div class="debug-section">
-            <q-btn
-              label="Simulate"
-              color="red"
-              @click="toggleSimulatedMessages"
-              :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"
-            />
-          </div>
+<!--          <div class="debug-section">-->
+<!--            <q-btn-->
+<!--              label="Simulate"-->
+<!--              color="red"-->
+<!--              @click="toggleSimulatedMessages"-->
+<!--              :icon="simulateIncomingMessages ? 'pause' : 'play_arrow'"-->
+<!--            />-->
+<!--          </div>-->
         </div>
       </q-card>
     </div>
   </div>
 </template>
 
-<script>
-import {mapGetters, mapMutations} from 'vuex';
-import {AppVisibility} from 'quasar';
+<script lang="ts">
+//import {AppVisibility} from 'quasar';
+import { useUserStore } from 'src/stores/user';
+import type { Message, Member } from 'src/stores/models'
 
 export default {
+  setup() {
+    const userStore = useUserStore();
+
+    return {
+      userStore,
+    };
+  },
   data() {
     return {
       newMessage: '',
       displayedError: '',
       loading: false,
       itemsPerPage: 20,
-      visibleMessages: [],
+      visibleMessages: [] as Message[],
       simulateIncomingMessages: false,
-      typingMember: null,
+      typingMember: null as Member | null,
       fakeTypingMessage: 'This is the fake typing message.'
     };
   },
 
   computed: {
-    ...mapGetters('all', {
-      loggedUser: 'getLoggedUser',
-      selectedChannel: 'getSelectedChannel',
-      allUsers: 'getAllUsers',
-      allPublicChannels: 'getAllPublicChannels',
-      mentionsOnly: 'getMentionsOnly'
-    }),
-    filteredPublicChannels() {
-      return this.allPublicChannels.filter(
-        channel => !this.loggedUser.channels.some(userChannel => userChannel.name === channel.name)
-      );
+    loggedUser() {
+      return this.userStore.loggedUser;
+    },
+    selectedChannel() {
+      return this.userStore.selectedChannel;
+    },
+    mentionsOnly() {
+      return this.userStore.mentionsOnly;
+    },
+    allUsers() {
+      return this.userStore.usersAsMemberInterface;
+    },
+    allPublicChannels() {
+      return this.userStore.publicChannels;
+    },
+    messages() {
+      return this.userStore.channelMessages;
     },
 
     messagesCompositeKey() {
-      return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.user.status}`;
+      if (!this.loggedUser || !this.selectedChannel){
+        return '';
+      }
+      return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
     }
   },
 
   created() {
     this.initMessages();
-    this.simulateTypingMember();
+    // this.simulateTypingMember();
   },
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
-      if (newChannel !== oldChannel) {
+      if (newChannel == null) {
+        this.visibleMessages = [];
+      }
+
+      if (!newChannel) {
+        this.visibleMessages = [];
+        // TODO:: Clear out the message list and return to "Please select channel screen"
+        return;
+
+      }
+      else if (newChannel !== oldChannel) {
         this.initMessages();
-        this.simulateTypingMember();
+        // this.simulateTypingMember();
       }
     },
-    'loggedUser.user.status': function (newStatus) {
+    'loggedUser.status': function (newStatus) {
       if (newStatus !== 'offline') {
         this.initMessages();
       }
@@ -122,26 +150,23 @@ export default {
   },
 
   methods: {
-    ...mapMutations('all', [
-      'sendNewMessage',
-      'addMemberToChannel',
-      'kickMemberFromChannel',
-      'addKickVoteOrKickMember',
-      'leaveChannel',
-      'deleteChannel',
-      'joinChannel',
-      'fetchNewMessage',
-      'toggleRightDrawerOpen'
-    ]),
 
-    initMessages() {
-      if (this.selectedChannel && this.selectedChannel.messages) {
-        this.visibleMessages = this.selectedChannel.messages.slice(-this.itemsPerPage);
+    async initMessages() {
+      if (!this.selectedChannel || !this.selectedChannel.name) {
+        console.warn('No valid channel selected. Skipping message initialization.');
+        this.visibleMessages = [];
+        return;
+      }
+      await this.userStore.fetchMessages(this.selectedChannel.name);
+      if (this.selectedChannel && this.messages) {
+        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
       }
     },
 
-    isLoggedUser(message) {
-      return message.user.nickName === this.loggedUser.user.nickName;
+    isLoggedUser(message: Message) {
+      if (this.loggedUser) {
+        return message.sender === this.loggedUser.nickName;
+      }
     },
 
     handleMessage() {
@@ -155,65 +180,66 @@ export default {
     },
 
     toggleSimulatedMessages() {
-      if (this.simulateIncomingMessages) {
-        clearInterval(this.simulationInterval);
-        this.simulateIncomingMessages = false;
-      } else {
-        this.simulationInterval = setInterval(this.simulateIncomingMessage, 5000);
-        this.simulateIncomingMessages = true;
-      }
+      // if (this.simulateIncomingMessages) {
+      //   clearInterval(this.simulationInterval);
+      //   this.simulateIncomingMessages = false;
+      // } else {
+      //   this.simulationInterval = setInterval(this.simulateIncomingMessage, 5000);
+      //   this.simulateIncomingMessages = true;
+      // }
     },
 
     simulateIncomingMessage() {
-      const otherUsers = this.selectedChannel.members.filter(user => user.nickName !== this.loggedUser.user.nickName);
-      const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
-      const mentionLoggedUser = Math.random() < 0.5;
+      // const otherUsers = this.selectedChannel.users.filter(user => user.nickName !== this.loggedUser.nickName);
+      // const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+      // const mentionLoggedUser = Math.random() < 0.5;
 
-      let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
-      if (mentionLoggedUser) {
-        randomMessageContent = `Hi @${this.loggedUser.user.nickName} how are you?`;
-      }
+      // let randomMessageContent = `Hello, my name is ${randomUser.firstName} ${randomUser.lastName} and my nick is ${randomUser.nickName}.`;
+      // if (mentionLoggedUser) {
+      //   randomMessageContent = `Hi @${this.loggedUser.nickName} how are you?`;
+      // }
 
-      const incomingMessage = {
-        user: randomUser,
-        content: randomMessageContent,
-        timestamp: new Date(),
-        channel: this.selectedChannel
-      };
+      // const incomingMessage = {
+      //   user: randomUser,
+      //   content: randomMessageContent,
+      //   timestamp: new Date(),
+      //   channel: this.selectedChannel
+      // };
 
-      this.fetchNewMessage(incomingMessage)
+      // this.fetchNewMessage(incomingMessage)
 
-      if (this.loggedUser.user.status === 'offline') {
-        return;
-      }
-      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
+      // if (this.loggedUser.status === 'offline') {
+      //   return;
+      // }
+      // this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
 
-      // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
+      // // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
-      if (this.loggedUser.user.status === 'DND') {
-        return;
-      }
+      // if (this.loggedUser.status === 'DND') {
+      //   return;
+      // }
 
-      if (AppVisibility.appVisible) {
-        if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.user.nickName)) {
-          this.$q.notify({
-            message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
-            color: 'info',
-            position: 'top',
-            timeout: 3000
-          });
-        }
-      }
+      // if (AppVisibility.appVisible) {
+      //   if (!this.mentionsOnly || incomingMessage.content.includes('@' + this.loggedUser.nickName)) {
+      //     this.$q.notify({
+      //       message: `${randomUser.nickName}: ${randomMessageContent.substring(0, 30)}...`,
+      //       color: 'info',
+      //       position: 'top',
+      //       timeout: 3000
+      //     });
+      //   }
+      // }
     },
 
     loadMoreMessages() {
-      if (this.loading) return;
+      if (this.loading || !this.messages) return;
       this.loading = true;
 
+
       const currentVisibleCount = this.visibleMessages.length;
-      const totalMessages = this.selectedChannel.messages.length;
+      const totalMessages = this.messages.length;
       const start = Math.max(totalMessages - currentVisibleCount - this.itemsPerPage, 0);
-      const newMessages = this.selectedChannel.messages.slice(start, totalMessages - currentVisibleCount);
+      const newMessages = this.messages.slice(start, totalMessages - currentVisibleCount);
 
       if (newMessages.length > 0) {
         // This will cause a jump to the new batch of messages
@@ -222,125 +248,134 @@ export default {
       this.loading = false;
     },
 
-    sendMessage() {
-      let payload = {
-        content: this.newMessage,
-        timestamp: new Date(),
-        channel: this.selectedChannel
+    async sendMessage() {
+      if (this.selectedChannel) {
+        await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
+        await this.userStore.fetchMessages(this.selectedChannel.name);
+        if (this.messages) {
+          this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
+        }
+        this.newMessage = '';
       }
-      this.sendNewMessage(payload)
-      this.visibleMessages = [...this.selectedChannel.messages.slice(-this.itemsPerPage)];
-      this.newMessage = '';
     },
 
     simulateTypingMember() {
-      const otherMembers = this.selectedChannel.members.filter(
-        user => user.nickName !== this.loggedUser.user.nickName
-      );
-      if (otherMembers.length === 0) return;
+      // const otherMembers = this.selectedChannel.users.filter(
+      //   user => user.nickName !== this.loggedUser.nickName
+      // );
+      // if (otherMembers.length === 0) return;
 
-      this.typingMember = otherMembers[Math.floor(Math.random() * otherMembers.length)];
-      this.showTypingBanner = true;
+      // this.typingMember = otherMembers[Math.floor(Math.random() * otherMembers.length)];
+      // this.showTypingBanner = true;
     },
 
-    handleCommand(commandString) {
+    async handleCommand(commandString: string) {
       const [command, ...args] = commandString.split(' ');
 
+      if(!command || !this.selectedChannel || !this.loggedUser){
+        return;
+      }
+
       switch (command.toLowerCase()) {
-        case '/join':
-          const isAlreadyInChannel = this.loggedUser.channels.some((userChannel) => userChannel.name === args[0]);
+        case '/join': {
+          const channelName = args[0] || '';
+          if (channelName == ''){
+            await this.sendMessage();
+            break;
+          }
+          const isAlreadyInChannel = this.loggedUser.channels.some((userChannel) => userChannel.name === channelName);
 
           if (isAlreadyInChannel) {
             this.displayedError = 'You are already in this channel.';
             break;
           }
 
-          const channelToJoin = this.filteredPublicChannels.find((channel) => channel.name === args[0]);
+          const channelToJoin = this.allPublicChannels.find((channel) => channel.name === channelName);
+          if (!channelToJoin) {
+            const isPrivate = args.length > 1 && args[1] === '[private]';
+              
+            await this.userStore.createNewChannel(channelName, isPrivate);
+            break;
+          }
 
-          if (channelToJoin) {
-            this.joinChannel(channelToJoin);
-          }
-          else {
-            this.displayedError = 'This channel does not exist or it is a private channel.';
-          }
+          let alreadyInChannel = false;
+          await this.userStore.isUserInChannel(channelName).then((isInChannel) => {
+            if (isInChannel.data) {
+              this.displayedError = 'You are already a member of this channel.';
+              alreadyInChannel = true;
+            }
+          })
+          if (alreadyInChannel) { break; }
+
+          this.userStore.joinPublicChannel(channelName);
           break;
-
-        case '/invite':
+        }
+        case '/invite': {
           this.displayedError = '';
-          if (!this.selectedChannel.isPrivate || this.loggedUser.user === this.selectedChannel.admin) {
-            const userToInvite = this.allUsers.find(user => user.nickName === args[0]);
+          const nickName = args[0] || '';
+          if (nickName == ''){
+            await this.sendMessage();
+            break;
+          }
+          if (!this.selectedChannel.isPrivate || this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
+            const userToInvite = this.allUsers.find(user => user.nickName === nickName);
             if (!userToInvite) {
-              this.displayedError = `User with nickname '${args[0]}' doesn't exist.`;
+              this.displayedError = `User with nickname '${nickName}' doesn't exist.`;
               break;
             }
 
-            const isAlreadyMember = this.selectedChannel.members.some(member => member.nickName === args[0]);
+            const isAlreadyMember = this.selectedChannel.users.some(member => member.nickName === nickName);
 
             if (isAlreadyMember) {
-              this.displayedError = `User '${args[0]}' is already a member of this channel.`;
+              this.displayedError = `User '${nickName}' is already a member of this channel.`;
               break;
             }
-            let payload = {
-              member: userToInvite,
-              channel: this.selectedChannel
-            }
-            this.addMemberToChannel(payload);
+            await this.userStore.addUserToChannel(this.selectedChannel.name, userToInvite.nickName);
           }
           else {
             this.displayedError = 'You are not allowed to invite new members to this channel.';
           }
           break;
-
-        case '/kick':
-          if (args[0] === this.loggedUser.user.nickName) {
+        }
+        // TODO:: Admin kick works but check vote kick
+        case '/kick': {
+          const nickName = args[0] || '';
+          if (nickName == ''){
+            await this.sendMessage();
+            break;
+          }
+          if (nickName === this.loggedUser.nickName) {
             this.displayedError = 'You can not kick or vote to kick yourself out. Please use /cancel';
             break;
           }
-          const memberToKick = this.selectedChannel.members.find((member) => member.nickName === args[0]);
-          if (this.loggedUser.user === this.selectedChannel.admin) {
+          const memberToKick = this.selectedChannel.users.find((member) => member.nickName === nickName);
+          if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
             if (!memberToKick) {
-              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              this.displayedError = `User with nickname '${nickName}' is not in this channel.`;
               break;
             }
-            let payload = {
-              member: memberToKick,
-              channel: this.selectedChannel,
-            }
-            this.kickMemberFromChannel(payload);
+            await this.userStore.kickUserFromChannel(this.selectedChannel.name, memberToKick.nickName);
           }
           else if (!this.selectedChannel.isPrivate) {
             this.displayedError = 'You are not the admin of this channel, so you will only vote to kick a member.';
             if (!memberToKick) {
-              this.displayedError = `User with nickname '${args[0]}' is not in this channel.`;
+              this.displayedError = `User with nickname '${nickName}' is not in this channel.`;
               break;
             }
-
-            const voteData = this.selectedChannel.kickVotes.find((vote) => vote.member.nickName === args[0]);
-            if (voteData && voteData.votes.some(vote => vote.voter.nickName === this.loggedUser.user.nickName)) {
-              this.displayedError = `You have already voted to kick a user with nickname '${args[0]}' out.`;
-              break;
-            }
-            else {
-              let payload = {
-                member: memberToKick,
-                channel: this.selectedChannel
-              };
-
-              this.addKickVoteOrKickMember(payload);
-            }
+            await this.userStore.requestKickUserFromChannel(this.selectedChannel.name, memberToKick.nickName);
           }
           else {
             this.displayedError = 'You are not allowed to kick or request to kick a member out of this channel.';
           }
           break;
-
+        }
         case '/cancel':
-          this.leaveChannel(this.selectedChannel);
+          await this.userStore.leaveChannel(this.selectedChannel.name);
           break;
 
         case '/quit':
-          if (this.loggedUser.user === this.selectedChannel.admin) {
-            this.deleteChannel(this.selectedChannel);
+          if (this.loggedUser.nickName === this.selectedChannel.admin.nickName) {
+            await this.userStore.deleteChannel(this.selectedChannel.name);
           }
           else {
             this.displayedError = 'You are not admin of this channel, so you can not delete it.';
@@ -348,11 +383,11 @@ export default {
           break;
 
         case '/list':
-          this.toggleRightDrawerOpen();
+          this.userStore.toggleRightDrawerOpen();
           break;
 
         default:
-          this.sendMessage();
+          await this.sendMessage();
       }
       this.newMessage = '';
     },
