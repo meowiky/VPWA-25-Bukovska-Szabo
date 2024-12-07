@@ -4,6 +4,12 @@ import { column, beforeSave, BaseModel, hasMany, HasMany, manyToMany, ManyToMany
 import Message from './Message'
 import Channel from './Channel'
 
+export enum UserState {
+  ONLINE = 'online',
+  DND = 'DND',
+  OFFLINE = 'offline',
+}
+
 export default class User extends BaseModel {
   @column({ isPrimary: true })
   public id: number
@@ -24,7 +30,7 @@ export default class User extends BaseModel {
   public password: string
 
   @column()
-  public state!: string
+  public state: UserState;
 
   @column.dateTime()
   public registeredAt: DateTime

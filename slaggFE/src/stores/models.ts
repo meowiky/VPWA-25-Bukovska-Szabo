@@ -1,3 +1,9 @@
+export enum UserState {
+    ONLINE = 'online',
+    DND = 'DND',
+    OFFLINE = 'offline',
+}
+
 export interface User {
     id: number,
     email: string,
@@ -5,7 +11,7 @@ export interface User {
     registeredAt: Date,
     name: string | null,
     surname: string | null,
-    state: string | null,
+    state: UserState | 'online' | 'DND' | 'offline',
     lastActiveState: Date,
     channels: Channel[],
 }

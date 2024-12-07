@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Channel, JoinableChannel, Member, Message, OtherUser, User } from './models';
+import type { Channel, JoinableChannel, Member, Message, OtherUser, User, UserState } from './models';
 import { api } from 'src/boot/axios';
 import socketService from 'src/services/socket';
 import { SocketService } from 'src/services/socket';
@@ -183,6 +183,20 @@ export const useUserStore = defineStore('user', {
             }
         } catch (error) {
             console.error('Logout error:', error);
+        }
+    },
+
+    async changeStatus(status: UserState | 'online' | 'DND' | 'offline') {
+        try {
+            const data = {
+                status: status,
+            };
+            const response = await api.post('/api/changeStatus', data);
+            if (this.loggedUser) {
+                this.loggedUser.state = response.data.status;
+            }
+        } catch (error) {
+            console.error('Change status error:', error);
         }
     },
 

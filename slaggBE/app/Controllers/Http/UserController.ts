@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Channel from 'App/Models/Channel'
 import KickRequest from 'App/Models/KickRequest'
-import User from 'App/Models/User'
+import User, { UserState } from 'App/Models/User'
 import Message from 'App/Models/Message'
 import { DateTime } from 'luxon'
 
@@ -63,6 +63,28 @@ export default class UserController {
     } catch (error) {
       return response.internalServerError({
         message: 'An error occurred',
+        error: error.message,
+      })
+    }
+  }
+
+  public async changeUserStatus({ auth, request, response }: HttpContextContract) {
+    const user = auth.user!
+    try {
+      const {status} = request.only(['status'])
+      console.log(status)
+      console.log(user)
+      const validStatuses = Object.values(UserState);
+      if (!validStatuses.includes(status)) {
+        return response.badRequest({ message: 'Invalid status value' });
+      }
+      user.state = status;
+      await user.save();
+      return response.ok({ status });
+    } catch (error) {
+      console.error('failed to change status:', error)
+      return response.badRequest({
+        message: 'Failed to change status',
         error: error.message,
       })
     }

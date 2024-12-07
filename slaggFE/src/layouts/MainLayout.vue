@@ -11,8 +11,12 @@
         </q-toolbar-title>
 
         <q-select
-          v-model="currentUserStatus"
+          v-if="loggedUser"
+          v-model="loggedUser.state"
           :options="statusOptions"
+          option-value="value"
+          @update:model-value="onStatusChange"
+          emit-value
           transition-show="jump-up"
           transition-hide="jump-up"
           filled
@@ -190,7 +194,6 @@ export default {
       inviteNickName: '',
       inviteError: '',
       mentionsOnly: false,
-      currentUserStatus: 'Online',
       statusOptions: [
         { label: 'Online', value: 'online' },
         { label: 'Offline', value: 'offline' },
@@ -202,9 +205,6 @@ export default {
   },
 
   watch: {
-    currentUserStatus(status) {
-      this.updateUserStatus(status.value)
-    },
     rightDrawerOpen(newVal) {
       this.rightDrawerOpenLocal = newVal;
     },
@@ -237,6 +237,12 @@ export default {
   },
 
   methods: {
+    async onStatusChange(newStatus: 'online' | 'DND' | 'offline') {
+      if (this.loggedUser) {
+        this.loggedUser.state = newStatus;
+        await this.userStore.changeStatus(newStatus);
+      }
+    },
     async createChannel() {
       await this.userStore.createNewChannel(this.newChannelName, this.isPrivate);
       this.createChannelDialog = false;
