@@ -37,6 +37,8 @@ export const useUserStore = defineStore('user', {
                 // socket.io.opts.query = { token: this.token };
 
                 const socket = this.socketService.connect('test', this.token);
+                const message = 'Dummy message'
+                socket.emit('addMessage', message)
                 console.log('Socket connected:', socket.connected);
             }
         } catch (error) {

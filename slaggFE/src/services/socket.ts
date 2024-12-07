@@ -18,7 +18,7 @@ export class SocketService {
 
   connect(channelName: string, token: string) {
     if (!this.sockets[channelName]) {
-      this.sockets[channelName] = this.manager.socket(`${this.path}`, {
+      this.sockets[channelName] = this.manager.socket(`${this.path}/${channelName}`, {
         auth: {token: token}
       })
     }
