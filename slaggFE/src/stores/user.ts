@@ -70,6 +70,15 @@ export const useUserStore = defineStore('user', {
             socket.on('newMessage', (messageData: Message) => {
                 console.log('New message received:', messageData);
                 // TODO: dostaneme message a co trz s nou xd
+                // TODO: notifikacia na new message
+                if (this.selectedChannel && this.selectedChannel.name === channelString) {
+                    if (this.channelMessages) {
+                        this.channelMessages.push(messageData);
+                    }
+                    else {
+                        this.channelMessages = [messageData];
+                    }
+                }
             });
             socket.on('deletedChannel', (channelNameToRemove: string) => {
                 console.log('deleted channel:', channelNameToRemove);
@@ -332,19 +341,6 @@ export const useUserStore = defineStore('user', {
             socket.emit('requestKick', user);
         } catch (error) {
             console.error('request kick user from channel error:', error);
-        }
-    },
-
-    async fetchMessages(channelName: string) {
-        try {
-            const response = await api.get('/api/messages', {
-                params: {
-                    channelName
-                }
-            });
-            this.channelMessages = response.data.data;
-        } catch (error) {
-            console.error('fetch messages error:', error);
         }
     },
 

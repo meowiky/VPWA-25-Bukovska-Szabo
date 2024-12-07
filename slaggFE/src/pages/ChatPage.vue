@@ -20,8 +20,9 @@
             :debounce="1000"
             reverse
           >
+            <!-- tu som zatial to zmenila z visibleMessages na messages lebo treba to zmenit tak ze sa loadne len poslednych idk napr 20 messagov a potom ak user scrollne vyssie tak sa loadne dalsich 20 messagov atd-->
             <q-chat-message
-              v-for="(message, index) in visibleMessages"
+              v-for="(message, index) in messages"
               :key="index"
               :name="message.sender"
               :text="[message.content]"
@@ -252,7 +253,6 @@ export default {
       if (!this.newMessage || this.newMessage.length === 0) return;
       if (this.selectedChannel) {
         await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
-        await this.userStore.fetchMessages(this.selectedChannel.name);
         if (this.messages) {
           this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
         }
