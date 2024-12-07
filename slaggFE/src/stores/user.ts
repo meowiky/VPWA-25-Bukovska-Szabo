@@ -114,8 +114,8 @@ export const useUserStore = defineStore('user', {
                     }
                 }
             });
-            socket.on('kickRequest', (changedMember: Member) => {
-                console.log('new kick request for', changedMember);
+            socket.on('reloadUser', (changedMember: Member) => {
+                console.log('reloaded user', changedMember);
                 if (this.loggedUser) {
                     const targetChannel = this.loggedUser.channels.find(
                         (ch) => ch.name === channelString
@@ -124,7 +124,13 @@ export const useUserStore = defineStore('user', {
                         targetChannel.users = targetChannel.users.filter(
                             (user) => user.nickName !== changedMember.nickName
                         );
-                        targetChannel.users.push(changedMember);
+                        if (targetChannel.users) {
+                            targetChannel.users.push(changedMember);
+                        }
+                        else {
+                            targetChannel.users = [changedMember];
+                        }
+                        
                     }
                 }
             });
@@ -194,6 +200,12 @@ export const useUserStore = defineStore('user', {
             const response = await api.post('/api/changeStatus', data);
             if (this.loggedUser) {
                 this.loggedUser.state = response.data.status;
+                if(this.loggedUser.channels){
+                    this.loggedUser.channels.forEach((channel) => {
+                        const socket = this.socketService.connect(`${channel.name}`, this.token as string);
+                        socket.emit('reloadUser', this.loggedUser?.nickName);
+                    });
+                }
             }
 
         } catch (error) {
@@ -338,7 +350,7 @@ export const useUserStore = defineStore('user', {
             );
             const socket = this.socketService.connect(`${channel}`, this.token as string);
             socket.emit('memberLeftChannel', user); // pre istotu, ak by bol member uz vyhodeny lebo toto bol 3 request
-            socket.emit('requestKick', user);
+            socket.emit('reloadUser', user);
         } catch (error) {
             console.error('request kick user from channel error:', error);
         }

@@ -148,7 +148,7 @@ export default class SocketController {
     }
   }
 
-  public async requestKick({socket, params}: WsContextContract, memberNickName: string) { 
+  public async reloadUser({socket, params}: WsContextContract, memberNickName: string) { 
     const channel = await Channel.query().where('name', params.channelName).preload('users').first()
     if (channel) {
       const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
@@ -169,7 +169,7 @@ export default class SocketController {
           kickRequests: formattedKickRequests,
           status: memberInChannel.state,
         }
-        socket.nsp.emit('kickRequest', newMemberData);
+        socket.nsp.emit('reloadUser', newMemberData);
         
       }
     }
