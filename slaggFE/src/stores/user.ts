@@ -54,8 +54,8 @@ export const useUserStore = defineStore('user', {
     },
 
     async loadChannels(channels: string[]) {
-        channels.forEach((channel) => {
-            const socket = this.socketService.connect(`${channel}`, this.token as string);
+        channels.forEach((channelString) => {
+            const socket = this.socketService.connect(`${channelString}`, this.token as string);
             socket.on('channel', (addedChannel: Channel) => {
                 console.log('channel received:', addedChannel);
                 this.loggedUser?.channels.push(addedChannel);
@@ -73,6 +73,19 @@ export const useUserStore = defineStore('user', {
                 }
                 this.socketService.disconnect(channelNameToRemove);
                 
+            });
+            socket.on('memberLeftChannel', (member: string) => {
+                console.log('member left channel:', member);
+                if (this.loggedUser) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users = targetChannel.users.filter(
+                            (user) => user.nickName !== member
+                        );
+                    }
+                }
             });
         });
     },
@@ -195,6 +208,7 @@ export const useUserStore = defineStore('user', {
             }
             const socket = this.socketService.connect(`${name}`, this.token as string);
             socket.emit('deletedChannel');
+            this.socketService.delete(name);
         } catch (error) {
             console.error('Delete channel error:', error);
         }
@@ -210,6 +224,9 @@ export const useUserStore = defineStore('user', {
             if (this.selectedChannel?.name == name) {
               this.selectedChannel = null;
             }
+            const socket = this.socketService.connect(`${name}`, this.token as string);
+            socket.emit('deletedChannel'); // pre istotu ak by bol nas user admin a channel sa aj vymaze
+            socket.emit('memberLeftChannel', this.loggedUser?.nickName);
             await this.reloadData();
         } catch (error) {
             console.error('Delete channel error:', error);

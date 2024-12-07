@@ -30,9 +30,9 @@
 
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
-        <template v-if="loggedUser && loggedUser.channels.length > 0">
+        <template v-if="loggedUser">
         <q-item-label header>Channels</q-item-label>
-
+        <template v-if="loggedUser.channels && loggedUser.channels.length > 0">
         <q-item
           clickable
           v-for="channel in loggedUser.channels"
@@ -57,7 +57,7 @@
             />
           </q-item-section>
         </q-item>
-
+      </template>
         <q-item clickable @click="openCreateChannelDialog">
           <q-item-section avatar>
             <q-icon name="add" />

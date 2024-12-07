@@ -53,6 +53,15 @@ export class SocketService {
     }
   }
 
+  delete(channelName: string) {
+    if (this.sockets[channelName]) {
+      if (this.sockets[channelName].connected) {
+        this.sockets[channelName].disconnect();
+      }
+      delete this.sockets[channelName];
+    }
+  }
+
   deleteAll() {
     for (const channelName in this.sockets) {
       delete this.sockets[channelName];

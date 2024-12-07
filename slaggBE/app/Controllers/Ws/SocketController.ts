@@ -120,4 +120,15 @@ export default class SocketController {
     }
   }
 
+  public async memberLeftChannel({socket, params}: WsContextContract, memberNickName: string) {
+    const channel = await Channel.query().where('name', params.channelName).preload('users').first()
+    if (channel) {
+      const isMemberInChannel = channel.users.some((user) => user.nickname === memberNickName);
+      if (!isMemberInChannel) {
+        socket.nsp.emit('memberLeftChannel', memberNickName)
+      }
+    }
+    
+  }
+
 }
