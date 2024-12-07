@@ -76,7 +76,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async logout() {
-        try { 
+        try {
             const response = await api.delete('/api/logout');
             if (response.data.message == 'Logout successful') {
                 localStorage.removeItem('token');
@@ -91,7 +91,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async reloadData() {
-        try { 
+        try {
             const response = await api.get('/api/me');
             if (response) {
                 const { user, allPublicChannels, allUsers } = response.data;
@@ -105,7 +105,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async createNewChannel(name: string, isPrivate: boolean) {
-        try { 
+        try {
             const data = {
                 name: name,
                 isPrivate: isPrivate
@@ -118,12 +118,15 @@ export const useUserStore = defineStore('user', {
     },
 
     async deleteChannel(name: string){
-        try { 
+        try {
             await api.delete('/api/deleteChannel', {
                 data: {
                     name: name,
                 }
             });
+            if (this.selectedChannel?.name == name) {
+                this.selectedChannel = null;
+            }
             await this.reloadData();
         } catch (error) {
             console.error('Delete channel error:', error);
@@ -131,12 +134,15 @@ export const useUserStore = defineStore('user', {
     },
 
     async leaveChannel(name: string){
-        try { 
+        try {
             await api.delete('/api/leaveChannel', {
                 data: {
                     name: name,
                 }
             });
+            if (this.selectedChannel?.name == name) {
+              this.selectedChannel = null;
+            }
             await this.reloadData();
         } catch (error) {
             console.error('Delete channel error:', error);
@@ -144,7 +150,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async kickUserFromChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.delete('/api/kickUserFromChannel', {
                 data: {
                     channelName: channel,
@@ -158,7 +164,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async addUserToChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.post(
                 '/api/addUserToChannel',
                 {
@@ -173,7 +179,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async joinPublicChannel(channel: string) {
-        try { 
+        try {
             await api.post(
                 '/api/joinPublicChannel',
                 {
@@ -187,7 +193,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async requestKickUserFromChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.post(
                 '/api/requestKickUserFromChannel',
                 {
@@ -202,7 +208,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async fetchMessages(channelName: string) {
-        try { 
+        try {
             const response = await api.get('/api/messages', {
                 params: {
                     channelName
@@ -215,7 +221,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async sendNewMessage(channel: string, message: string) {
-        try { 
+        try {
             await api.post(
                 '/api/messages',
                 {
@@ -230,13 +236,13 @@ export const useUserStore = defineStore('user', {
     },
 
     async isUserInChannel(channel: string) {
-        try { 
+        try {
             const response = await api.get('/api/isUserInChannel', {
                 params: {
                     channelName: channel
                 }
             });
-    
+
             return response.data || false;
         } catch (error) {
             console.error('is user in channel error:', error);
@@ -253,10 +259,13 @@ export const useUserStore = defineStore('user', {
         if(channel) {
             await this.fetchMessages(channel.name);
         }
+        else if(!channel) {
+            this.channelMessages = [];
+        }
     },
 
   },
   getters: {
-    
+
   },
 });

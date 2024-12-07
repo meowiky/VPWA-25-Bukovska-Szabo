@@ -46,14 +46,14 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn dense flat icon="exit_to_app" @click="leaveChannelAction(channel)" />
+            <q-btn dense flat icon="exit_to_app" @click.stop="leaveChannelAction(channel)" />
             <q-btn
               dense
               flat
               v-if="channel.admin.email === loggedUser.email"
               icon="delete"
               color="negative"
-              @click="deleteChannelAction(channel)"
+              @click.stop="deleteChannelAction(channel)"
             />
           </q-item-section>
         </q-item>
@@ -197,7 +197,7 @@ export default {
         { label: 'DND', value: 'DND' },
       ],
       rightDrawerOpenLocal: false,
-      channelIsLoading: false,
+      channelActionLoading: false,
     };
   },
 
@@ -250,19 +250,20 @@ export default {
       this.createChannelDialog = false;
     },
 
-    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
-    // TODO:: We get 404 on messages get upon leaving
     async leaveChannelAction(channel: Channel) {
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
       await this.userStore.leaveChannel(channel.name);
-
-      if (this.selectedChannel && this.selectedChannel.name === channel.name) {
-        this.userStore.setSelectedChannel(null);
-      }
+      this.channelActionLoading = false;
     },
 
     async deleteChannelAction(channel: Channel) {
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
       await this.userStore.deleteChannel(channel.name);
+      this.channelActionLoading = false;
     },
+
 
     // cleanUpChannelState(channelName) {
     //   const updatedChannels = this.loggedUser.channels.filter(c => c.name !== channelName);
@@ -370,7 +371,7 @@ export default {
     },
 
     toggleMentionsOnly() {
-      
+
     },
 
     updateUserStatus (value: string) {

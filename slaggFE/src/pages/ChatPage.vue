@@ -127,15 +127,8 @@ export default {
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
-      if (newChannel == null) {
-        this.visibleMessages = [];
-      }
-
       if (!newChannel) {
         this.visibleMessages = [];
-        // TODO:: Clear out the message list and return to "Please select channel screen"
-        return;
-
       }
       else if (newChannel !== oldChannel) {
         this.initMessages();
@@ -157,11 +150,18 @@ export default {
         this.visibleMessages = [];
         return;
       }
-      await this.userStore.fetchMessages(this.selectedChannel.name);
-      if (this.selectedChannel && this.messages) {
-        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+
+      try {
+        await this.userStore.fetchMessages(this.selectedChannel.name);
+        if (this.messages) {
+          this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+        }
+      } catch (error) {
+        console.error('Failed to fetch messages:', error);
+        this.visibleMessages = [];
       }
     },
+
 
     isLoggedUser(message: Message) {
       if (this.loggedUser) {
@@ -293,7 +293,7 @@ export default {
           const channelToJoin = this.allPublicChannels.find((channel) => channel.name === channelName);
           if (!channelToJoin) {
             const isPrivate = args.length > 1 && args[1] === '[private]';
-              
+
             await this.userStore.createNewChannel(channelName, isPrivate);
             break;
           }
