@@ -337,7 +337,7 @@ export default class UserController {
       const messageData = messages.map((message) => ({
         id: message.id,
         content: message.message,
-        createdAt: message.sentAt,
+        sentAt: message.sentAt,
         sender: message.user.nickname
       }))
 
