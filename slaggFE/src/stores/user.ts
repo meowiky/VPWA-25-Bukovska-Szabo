@@ -151,12 +151,14 @@ export const useUserStore = defineStore('user', {
             return false;
         }
     },
-    async register(nickName: string, email: string, password: string) {
+    async register(nickName: string, email: string, password: string, name: string, surname: string) {
         try {
             const data = {
                 nickname: nickName,
                 email: email,
                 password: password,
+                name: name,
+                surname: surname
             };
             const response = await api.post('/api/register', data);
             const token = response.data.token;

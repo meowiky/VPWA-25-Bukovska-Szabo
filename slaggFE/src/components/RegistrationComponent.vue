@@ -8,6 +8,18 @@
     />
     <q-input
       filled
+      v-model="formData.name"
+      label="Name"
+      :rules="[val => !!val || 'Name is required']"
+    />
+    <q-input
+      filled
+      v-model="formData.surname"
+      label="Surname"
+      :rules="[val => !!val || 'Surname is required']"
+    />
+    <q-input
+      filled
       v-model="formData.email"
       label="Email"
       :rules="[val => !!val || 'Email is required', val => /.+@.+\..+/.test(val) || 'Email must be valid']"
@@ -36,7 +48,9 @@ export default defineComponent({
       formData: {
         username: '',
         email: '',
-        password: ''
+        password: '',
+        name: '',
+        surname: ''
       },
       errorMessage: ''
     };
@@ -56,7 +70,7 @@ export default defineComponent({
       }
       try {
         const userStore = useUserStore();
-        const success = await userStore.register(this.formData.username, this.formData.email, this.formData.password);
+        const success = await userStore.register(this.formData.username, this.formData.email, this.formData.password, this.formData.name, this.formData.surname);
         if (success) {
           this.$router.push('/chat');
 
@@ -71,7 +85,9 @@ export default defineComponent({
       this.formData = {
         username: '',
         email: '',
-        password: ''
+        password: '',
+        name: '',
+        surname: ''
       };
     }
   }

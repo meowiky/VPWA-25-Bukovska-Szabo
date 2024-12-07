@@ -3,8 +3,8 @@ import { schema, rules } from '@ioc:Adonis/Core/Validator'
 export default class RegisterValidator {
   public schema = schema.create({
     nickname: schema.string(),
-    surname: schema.string.optional(),
-    name: schema.string.optional(),
+    surname: schema.string(),
+    name: schema.string(),
     email: schema.string({}, [
       rules.email(),
       rules.normalizeEmail({ allLowercase: true }),

@@ -7,8 +7,8 @@ export default class Users extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').primary()
       table.string('nickname', 180).notNullable()
-      table.string('surname').nullable()
-      table.string('name').nullable()
+      table.string('surname').notNullable()
+      table.string('name').notNullable()
       table.string('email', 255).notNullable().unique()
       table.string('password', 180).notNullable()
       table.enum('state', ['online', 'DND', 'offline']).defaultTo('offline')
