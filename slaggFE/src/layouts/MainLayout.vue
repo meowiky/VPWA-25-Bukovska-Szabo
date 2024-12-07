@@ -248,6 +248,8 @@ export default {
     async createChannel() {
       await this.userStore.createNewChannel(this.newChannelName, this.isPrivate);
       this.createChannelDialog = false;
+      this.newChannelName = '';
+      this.isPrivate = false;
     },
 
     async leaveChannelAction(channel: Channel) {
