@@ -148,4 +148,31 @@ export default class SocketController {
     }
   }
 
+  public async requestKick({socket, params}: WsContextContract, memberNickName: string) { 
+    const channel = await Channel.query().where('name', params.channelName).preload('users').first()
+    if (channel) {
+      const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
+      if (memberInChannel) {
+        const kickrequests = await KickRequest.query()
+            .where('channelId', channel.id)
+            .andWhere('targetId', memberInChannel.id)
+            .preload('requester');
+
+        const formattedKickRequests = kickrequests.map((request) => ({
+          requesterNickName: request.requester.nickname,
+        }));
+
+        const newMemberData = {
+          id: memberInChannel.id,
+          email: memberInChannel.email,
+          nickName: memberInChannel.nickname,
+          kickRequests: formattedKickRequests,
+          status: memberInChannel.state,
+        }
+        socket.nsp.emit('kickRequest', newMemberData);
+        
+      }
+    }
+  }
+
 }

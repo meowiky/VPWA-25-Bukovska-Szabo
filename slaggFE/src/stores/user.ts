@@ -105,6 +105,20 @@ export const useUserStore = defineStore('user', {
                     }
                 }
             });
+            socket.on('kickRequest', (changedMember: Member) => {
+                console.log('new kick request for', changedMember);
+                if (this.loggedUser) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users = targetChannel.users.filter(
+                            (user) => user.nickName !== changedMember.nickName
+                        );
+                        targetChannel.users.push(changedMember);
+                    }
+                }
+            });
         });
     },
     async login(email: string, password: string) {
@@ -313,7 +327,9 @@ export const useUserStore = defineStore('user', {
                     userNickName: user
                 }
             );
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('memberLeftChannel', user); // pre istotu, ak by bol member uz vyhodeny lebo toto bol 3 request
+            socket.emit('requestKick', user);
         } catch (error) {
             console.error('request kick user from channel error:', error);
         }
