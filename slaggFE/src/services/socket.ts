@@ -53,7 +53,7 @@ export class SocketService {
     }
   }
 
-  delete() {
+  deleteAll() {
     for (const channelName in this.sockets) {
       delete this.sockets[channelName];
     }

@@ -64,6 +64,16 @@ export const useUserStore = defineStore('user', {
                 console.log('New message received:', messageData);
                 // TODO: dostaneme message a co trz s nou xd
             });
+            socket.on('deletedChannel', (channelNameToRemove: string) => {
+                console.log('deleted channel:', channelNameToRemove);
+                if (this.loggedUser) {
+                    this.loggedUser.channels = this.loggedUser.channels.filter(
+                        (channel) => channel.name !== channelNameToRemove
+                    );
+                }
+                this.socketService.disconnect(channelNameToRemove);
+                
+            });
         });
     },
     async login(email: string, password: string) {
@@ -108,7 +118,7 @@ export const useUserStore = defineStore('user', {
             for (const channelName in this.socketService.sockets) {
                 this.socketService.disconnect(channelName);
             }
-            this.socketService.delete();
+            this.socketService.deleteAll();
             const response = await api.delete('/api/logout');
             if (response.data.message == 'Logout successful') {
                 localStorage.removeItem('token');
@@ -183,7 +193,8 @@ export const useUserStore = defineStore('user', {
             if (this.selectedChannel?.name == name) {
                 this.selectedChannel = null;
             }
-            await this.reloadData();
+            const socket = this.socketService.connect(`${name}`, this.token as string);
+            socket.emit('deletedChannel');
         } catch (error) {
             console.error('Delete channel error:', error);
         }

@@ -113,5 +113,11 @@ export default class SocketController {
     socket.nsp.emit('newMessage', newMessageData)
   }
 
+  public async deletedChannel({socket, params}: WsContextContract) {
+    const channel = await Channel.query().where('name', params.channelName).first()
+    if (!channel) {
+      socket.nsp.emit('deletedChannel', params.channelName)
+    }
+  }
 
 }
