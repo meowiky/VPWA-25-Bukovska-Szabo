@@ -195,6 +195,7 @@ export const useUserStore = defineStore('user', {
             if (this.loggedUser) {
                 this.loggedUser.state = response.data.status;
             }
+
         } catch (error) {
             console.error('Change status error:', error);
         }
@@ -218,20 +219,6 @@ export const useUserStore = defineStore('user', {
             if (response) {
                 const { allPublicChannels } = response.data;
                 this.publicChannels = allPublicChannels;
-            }
-        } catch (error) {
-            console.error('Reload error:', error);
-        }
-    },
-
-    async reloadData() {
-        try {
-            const response = await api.get('/api/me');
-            if (response) {
-                const { user, allPublicChannels, allUsers } = response.data;
-                this.loggedUser = user;
-                this.publicChannels = allPublicChannels;
-                this.usersAsMemberInterface = allUsers;
             }
         } catch (error) {
             console.error('Reload error:', error);
@@ -335,7 +322,6 @@ export const useUserStore = defineStore('user', {
             await this.loadChannels([channel]);
             const socket = this.socketService.connect(`${channel}`, this.token as string);
             socket.emit('addedMember', this.loggedUser?.nickName);
-            await this.reloadData();
         } catch (error) {
             console.error('join public channel error:', error);
         }
