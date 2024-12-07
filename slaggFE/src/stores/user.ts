@@ -27,19 +27,23 @@ export const useUserStore = defineStore('user', {
                 api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
                 const response = await api.get('/api/me');
                 if (response) {
-                    const { user, allPublicChannels, allUsers } = response.data;
-                    this.loggedUser = user;
-                    this.publicChannels = allPublicChannels;
-                    this.usersAsMemberInterface = allUsers;
+                    const { user, channels } = response.data;
+                    this.loggedUser = {
+                        id: user.id,
+                        email: user.email,
+                        nickName: user.nickName,
+                        registeredAt: user.registeredAt,
+                        name: user.name || null,
+                        surname: user.surname || null,
+                        state: user.state || null,
+                        lastActiveState: user.lastActiveState,
+                        channels: [],
+                    };
                     this.isUserLoggedIn = true;
+                    await this.getAllUsers();
+                    await this.getJoinablePublicChannels();
+                    await this.loadChannels(channels);
                 }
-
-                // socket.io.opts.query = { token: this.token };
-
-                const socket = this.socketService.connect('test', this.token);
-                const message = 'Dummy message'
-                socket.emit('addMessage', message)
-                console.log('Socket connected:', socket.connected);
             }
         } catch (error) {
             console.error('Auth error:', error);
@@ -47,6 +51,20 @@ export const useUserStore = defineStore('user', {
             localStorage.removeItem('token');
             this.token = null;
         }
+    },
+
+    async loadChannels(channels: string[]) {
+        channels.forEach((channel) => {
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.on('channel', (addedChannel: Channel) => {
+                console.log('channel received:', addedChannel);
+                this.loggedUser?.channels.push(addedChannel);
+            });
+            socket.on('newMessage', (messageData: Message) => {
+                console.log('New message received:', messageData);
+                // TODO: dostaneme message a co trz s nou xd
+            });
+        });
     },
     async login(email: string, password: string) {
         try {
@@ -87,6 +105,10 @@ export const useUserStore = defineStore('user', {
 
     async logout() {
         try {
+            for (const channelName in this.socketService.sockets) {
+                this.socketService.disconnect(channelName);
+            }
+            this.socketService.delete();
             const response = await api.delete('/api/logout');
             if (response.data.message == 'Logout successful') {
                 localStorage.removeItem('token');
@@ -97,6 +119,30 @@ export const useUserStore = defineStore('user', {
             }
         } catch (error) {
             console.error('Logout error:', error);
+        }
+    },
+
+    async getAllUsers() {
+        try {
+            const response = await api.get('/api/users');
+            if (response) {
+                const { allUsers } = response.data;
+                this.usersAsMemberInterface = allUsers;
+            }
+        } catch (error) {
+            console.error('Reload error:', error);
+        }
+    },
+
+    async getJoinablePublicChannels() {
+        try {
+            const response = await api.get('/api/joinable-channels');
+            if (response) {
+                const { allPublicChannels } = response.data;
+                this.publicChannels = allPublicChannels;
+            }
+        } catch (error) {
+            console.error('Reload error:', error);
         }
     },
 
@@ -121,7 +167,7 @@ export const useUserStore = defineStore('user', {
                 isPrivate: isPrivate
             };
             await api.post('/api/createChannel', data);
-            await this.reloadData();
+            await this.loadChannels([name]);
         } catch (error) {
             console.error('Create new channel error:', error);
         }
@@ -232,20 +278,10 @@ export const useUserStore = defineStore('user', {
 
     async sendNewMessage(channel: string, message: string) {
         try {
-            // await api.post(
-            //     '/api/messages',
-            //     {
-            //       channelName: channel,
-            //       message
-            //     },
-            // );
-
             if (!this.socketService.sockets[channel]) {
               return;
             }
-
-            this.socketService.sockets[channel].emit('newMessage', { message });
-            await this.reloadData();
+            this.socketService.sockets[channel].emit('addMessage', message );
         } catch (error) {
             console.error('send message error:', error);
         }
@@ -266,6 +302,19 @@ export const useUserStore = defineStore('user', {
         }
     },
 
+    async loadMessages(channelName: string) {
+        if (this.token) {
+            const socket = this.socketService.connect(`${channelName}`, this.token);
+            socket.emit('getMessages');
+
+            socket.on('loadedMessages', (messageData: Message[]) => {
+                console.log('Messages received:', messageData);
+    
+                this.channelMessages = messageData;
+            });
+        }
+    },
+
     toggleRightDrawerOpen() {
         this.rightDrawerOpen = !this.rightDrawerOpen;
     },
@@ -273,7 +322,7 @@ export const useUserStore = defineStore('user', {
     async setSelectedChannel(channel: Channel | null) {
         this.selectedChannel = channel;
         if(channel) {
-            await this.fetchMessages(channel.name);
+            await this.loadMessages(channel.name);
         }
         else if(!channel) {
             this.channelMessages = [];

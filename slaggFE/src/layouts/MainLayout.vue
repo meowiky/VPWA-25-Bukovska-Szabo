@@ -30,7 +30,7 @@
 
     <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
       <q-list>
-        <template v-if="loggedUser">
+        <template v-if="loggedUser && loggedUser.channels.length > 0">
         <q-item-label header>Channels</q-item-label>
 
         <q-item
@@ -133,7 +133,7 @@
 
         <q-card-section>
           <q-list>
-            <q-item v-for="channel in filteredPublicChannels" :key="channel.name">
+            <q-item v-for="channel in allPublicChannels" :key="channel.name">
               <q-item-section>{{ channel.name }}</q-item-section>
               <q-item-section side>
                 <q-btn icon="add" @click="joinChannel(channel.name)" />
@@ -234,14 +234,6 @@ export default {
     rightDrawerOpen() {
       return this.userStore.rightDrawerOpen;
     },
-    filteredPublicChannels() {
-      if (!this.loggedUser || !this.loggedUser.channels) {
-        return this.allPublicChannels;
-      }
-      return this.allPublicChannels.filter(
-        channel => !this.loggedUser?.channels.some(userChannel => userChannel.name === channel.name)
-      );
-    },
   },
 
   methods: {
@@ -294,7 +286,8 @@ export default {
       this.createChannelDialog = true;
     },
 
-    openPublicChannelsDialog() {
+    async openPublicChannelsDialog() {
+      this.userStore.getJoinablePublicChannels();
       this.publicChannelsDialog = true;
     },
 

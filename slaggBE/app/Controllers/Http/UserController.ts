@@ -6,6 +6,68 @@ import Message from 'App/Models/Message'
 import { DateTime } from 'luxon'
 
 export default class UserController {
+  public async getAllOtherUsers({ auth, response }: HttpContextContract){
+    try {
+      await auth.check()
+
+      const authenticatedUser = auth.user as User | undefined
+      if (!authenticatedUser) {
+        return response.unauthorized({ message: 'User not authenticated' })
+      }
+
+      const allUsers = await User.query()
+        .whereNot('id', authenticatedUser.id)
+        .select('name', 'surname', 'nickname', 'state')
+
+      return {
+        allUsers: allUsers.map((user) => ({
+          firstName: user.name,
+          lastName: user.surname,
+          nickName: user.nickname,
+          status: user.state as 'online' | 'DND' | 'offline',
+        })),
+      }
+    } catch (error) {
+      return response.internalServerError({
+        message: 'An error occurred',
+        error: error.message,
+      })
+    }
+  }
+
+  public async getJoinablePublicChannels({ auth, response }: HttpContextContract) {
+    try {
+      await auth.check()
+
+      const authenticatedUser = auth.user as User | undefined
+      if (!authenticatedUser) {
+        return response.unauthorized({ message: 'User not authenticated' })
+      }
+
+      const allPublicChannels = await Channel.query()
+      .where('is_private', false)
+      .preload('users');
+
+      const joinablePublicChannels = allPublicChannels.filter(
+        (channel) => !channel.users.some((user) => user.id === authenticatedUser.id)
+      );
+
+      return {
+        allPublicChannels: joinablePublicChannels.map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          isPrivate: channel.isPrivate,
+          lastActive: channel.lastActive,
+        })),
+      }
+    } catch (error) {
+      return response.internalServerError({
+        message: 'An error occurred',
+        error: error.message,
+      })
+    }
+  }
+  
   public async createNewChannel({ auth, request, response }: HttpContextContract) {
     const user = auth.user!
 

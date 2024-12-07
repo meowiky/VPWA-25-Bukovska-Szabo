@@ -47,7 +47,15 @@ export class SocketService {
 
   disconnect(channelName: string) {
     if (this.sockets[channelName]) {
-      this.sockets[channelName].disconnect();
+      if (this.sockets[channelName].connected) {
+        this.sockets[channelName].disconnect();
+      }
+    }
+  }
+
+  delete() {
+    for (const channelName in this.sockets) {
+      delete this.sockets[channelName];
     }
   }
 

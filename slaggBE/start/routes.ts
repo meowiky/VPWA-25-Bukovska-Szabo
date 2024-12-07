@@ -25,6 +25,8 @@ Route.group(() => {
   Route.post('/login', 'AuthController.login').as('auth.login')
   Route.delete('/logout', 'AuthController.logout').as('auth.logout').middleware('auth')
   Route.get('/me', 'AuthController.me').as('auth.me')
+  Route.get('/users', 'UserController.getAllOtherUsers').as('user.getAllOtherUsers')
+  Route.get('/joinable-channels', 'UserController.getJoinablePublicChannels').as('user.getJoinablePublicChannels')
 })
 .prefix('/api')
 

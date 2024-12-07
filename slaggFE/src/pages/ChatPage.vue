@@ -145,21 +145,21 @@ export default {
   methods: {
 
     async initMessages() {
-      if (!this.selectedChannel || !this.selectedChannel.name) {
-        console.warn('No valid channel selected. Skipping message initialization.');
-        this.visibleMessages = [];
-        return;
-      }
+      // if (!this.selectedChannel || !this.selectedChannel.name) {
+      //   console.warn('No valid channel selected. Skipping message initialization.');
+      //   this.visibleMessages = [];
+      //   return;
+      // }
 
-      try {
-        await this.userStore.fetchMessages(this.selectedChannel.name);
-        if (this.messages) {
-          this.visibleMessages = this.messages.slice(-this.itemsPerPage);
-        }
-      } catch (error) {
-        console.error('Failed to fetch messages:', error);
-        this.visibleMessages = [];
-      }
+      // try {
+      //   await this.userStore.fetchMessages(this.selectedChannel.name);
+      //   if (this.messages) {
+      //     this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+      //   }
+      // } catch (error) {
+      //   console.error('Failed to fetch messages:', error);
+      //   this.visibleMessages = [];
+      // }
     },
 
 
