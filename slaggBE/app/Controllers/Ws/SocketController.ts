@@ -50,7 +50,7 @@ export default class SocketController {
       },
       id: channel.id,
       isPrivate: channel.isPrivate,
-      lastActive: channel.lastActive.toISO(),
+      lastActive: channel.lastActive,
       name: channel.name,
       users: channel.users.map((user) => ({
         id: user.id,
@@ -112,4 +112,6 @@ export default class SocketController {
 
     socket.nsp.emit('newMessage', newMessageData)
   }
+
+
 }
