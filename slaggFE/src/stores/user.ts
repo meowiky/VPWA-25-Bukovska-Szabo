@@ -227,7 +227,7 @@ export const useUserStore = defineStore('user', {
             const socket = this.socketService.connect(`${name}`, this.token as string);
             socket.emit('deletedChannel'); // pre istotu ak by bol nas user admin a channel sa aj vymaze
             socket.emit('memberLeftChannel', this.loggedUser?.nickName);
-            await this.reloadData();
+            this.socketService.delete(name);
         } catch (error) {
             console.error('Delete channel error:', error);
         }
@@ -241,7 +241,8 @@ export const useUserStore = defineStore('user', {
                     userNickName: user
                 }
             });
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('memberLeftChannel', user);
         } catch (error) {
             console.error('Kick user from channel error:', error);
         }
