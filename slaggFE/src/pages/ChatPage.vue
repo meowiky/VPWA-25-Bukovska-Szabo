@@ -214,7 +214,7 @@ export default {
       // }
       // this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
 
-      // // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
+      // //  TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
       // if (this.loggedUser.status === 'DND') {
       //   return;
@@ -256,6 +256,7 @@ export default {
         if (this.messages) {
           this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
         }
+        // TODO:: Scroll down to new message?
         this.newMessage = '';
       }
     },
@@ -338,7 +339,6 @@ export default {
           }
           break;
         }
-        // TODO:: Admin kick works but check vote kick
         case '/kick': {
           const nickName = args[0] || '';
           if (nickName == ''){

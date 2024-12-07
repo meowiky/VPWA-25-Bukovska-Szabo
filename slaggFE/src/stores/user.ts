@@ -3,6 +3,7 @@ import type { Channel, JoinableChannel, Member, Message, OtherUser, User, UserSt
 import { api } from 'src/boot/axios';
 import socketService from 'src/services/socket';
 import { SocketService } from 'src/services/socket';
+import { QVueGlobals } from "quasar";
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -15,7 +16,8 @@ export const useUserStore = defineStore('user', {
     publicChannels: [] as JoinableChannel[],
     rightDrawerOpen: true as boolean,
     channelMessages: null as Message[] | null,
-    socketService: socketService as SocketService
+    socketService: socketService as SocketService,
+    ctx: null as QVueGlobals | null
   }),
   actions: {
     async initializeAuth() {
@@ -53,6 +55,27 @@ export const useUserStore = defineStore('user', {
         }
     },
 
+    async notifyNewMessage(message: Message, channelName: string | null = null) {
+      if (
+        !this.ctx ||
+        (this.loggedUser && this.loggedUser.nickName == message.sender)
+      ) { return }
+
+      let notificationMessage = `${message.sender}: ${message.content}`
+      if (channelName){
+          notificationMessage = `${message.sender} in ${channelName}: ${message.content}`
+      }
+
+      this.ctx.notify({
+        message: notificationMessage,
+        color: 'info',
+        position: 'top',
+        timeout: 5000
+      })
+
+      // TODO:: Create system notifications
+    },
+
     async loadChannels(channels: string[]) {
         channels.forEach((channelString) => {
             const socket = this.socketService.connect(`${channelString}`, this.token as string);
@@ -69,8 +92,7 @@ export const useUserStore = defineStore('user', {
             });
             socket.on('newMessage', (messageData: Message) => {
                 console.log('New message received:', messageData);
-                // TODO: dostaneme message a co trz s nou xd
-                // TODO: notifikacia na new message
+                this.notifyNewMessage(messageData, channelString);
                 if (this.selectedChannel && this.selectedChannel.name === channelString) {
                     if (this.channelMessages) {
                         this.channelMessages.push(messageData);
@@ -88,7 +110,7 @@ export const useUserStore = defineStore('user', {
                     );
                 }
                 this.socketService.disconnect(channelNameToRemove);
-                
+
             });
             socket.on('memberLeftChannel', (memberString: string) => {
                 console.log('member left channel:', memberString);
@@ -130,7 +152,7 @@ export const useUserStore = defineStore('user', {
                         else {
                             targetChannel.users = [changedMember];
                         }
-                        
+
                     }
                 }
             });
@@ -391,7 +413,7 @@ export const useUserStore = defineStore('user', {
 
             socket.on('loadedMessages', (messageData: Message[]) => {
                 console.log('Messages received:', messageData);
-    
+
                 this.channelMessages = messageData;
             });
         }
@@ -410,6 +432,10 @@ export const useUserStore = defineStore('user', {
             this.channelMessages = [];
         }
     },
+
+    setContext(ctx: QVueGlobals | null) {
+      this.ctx = ctx
+    }
 
   },
   getters: {

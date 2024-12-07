@@ -175,10 +175,16 @@
 <script lang="ts">
 import { useUserStore } from 'src/stores/user';
 import type { Member, Channel } from 'src/stores/models'
+import { useQuasar } from 'quasar'
+import { onMounted } from "vue";
 
 export default {
   setup() {
     const userStore = useUserStore();
+
+    onMounted(() => {
+      userStore.setContext(useQuasar());
+    })
 
     return {
       userStore,
@@ -203,6 +209,8 @@ export default {
       channelActionLoading: false,
     };
   },
+
+
 
   watch: {
     rightDrawerOpen(newVal) {
