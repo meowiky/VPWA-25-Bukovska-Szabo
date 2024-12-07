@@ -73,7 +73,20 @@ export const useUserStore = defineStore('user', {
         timeout: 5000
       })
 
-      // TODO:: Create system notifications
+      if (Notification && Notification.permission !== 'granted') {
+        await Notification.requestPermission()
+      }
+
+      if (Notification) {
+        const notification = new Notification(`${message.sender} in ${channelName}`, {
+          body: message.content,
+          icon: '/favicon.ico'
+        })
+        notification.onclick = () => {
+          window.focus()
+          notification.close()
+        }
+      }
     },
 
     async loadChannels(channels: string[]) {
