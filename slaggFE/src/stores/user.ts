@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import type { Channel, JoinableChannel, Message, OtherUser, User } from './models';
 import { api } from 'src/boot/axios';
+import socketService from 'src/services/socket';
+import { SocketService } from 'src/services/socket';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -13,6 +15,7 @@ export const useUserStore = defineStore('user', {
     publicChannels: [] as JoinableChannel[],
     rightDrawerOpen: true as boolean,
     channelMessages: null as Message[] | null,
+    socketService: socketService as SocketService
   }),
   actions: {
     async initializeAuth() {
@@ -30,6 +33,11 @@ export const useUserStore = defineStore('user', {
                     this.usersAsMemberInterface = allUsers;
                     this.isUserLoggedIn = true;
                 }
+
+                // socket.io.opts.query = { token: this.token };
+
+                const socket = this.socketService.connect('test', this.token);
+                console.log('Socket connected:', socket.connected);
             }
         } catch (error) {
             console.error('Auth error:', error);
@@ -222,13 +230,19 @@ export const useUserStore = defineStore('user', {
 
     async sendNewMessage(channel: string, message: string) {
         try {
-            await api.post(
-                '/api/messages',
-                {
-                  channelName: channel,
-                  message
-                },
-            );
+            // await api.post(
+            //     '/api/messages',
+            //     {
+            //       channelName: channel,
+            //       message
+            //     },
+            // );
+
+            if (!this.socketService.sockets[channel]) {
+              return;
+            }
+
+            this.socketService.sockets[channel].emit('newMessage', { message });
             await this.reloadData();
         } catch (error) {
             console.error('send message error:', error);
