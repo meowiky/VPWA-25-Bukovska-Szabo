@@ -249,6 +249,7 @@ export default {
     },
 
     async sendMessage() {
+      if (!this.newMessage || this.newMessage.length === 0) return;
       if (this.selectedChannel) {
         await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
         await this.userStore.fetchMessages(this.selectedChannel.name);
