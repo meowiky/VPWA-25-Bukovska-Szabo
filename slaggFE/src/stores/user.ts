@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type { Channel, JoinableChannel, Message, OtherUser, User } from './models';
+import type { Channel, JoinableChannel, Member, Message, OtherUser, User } from './models';
 import { api } from 'src/boot/axios';
 import socketService from 'src/services/socket';
 import { SocketService } from 'src/services/socket';
@@ -58,7 +58,14 @@ export const useUserStore = defineStore('user', {
             const socket = this.socketService.connect(`${channelString}`, this.token as string);
             socket.on('channel', (addedChannel: Channel) => {
                 console.log('channel received:', addedChannel);
-                this.loggedUser?.channels.push(addedChannel);
+                if (this.loggedUser?.channels) {
+                    this.loggedUser?.channels.push(addedChannel);
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
             });
             socket.on('newMessage', (messageData: Message) => {
                 console.log('New message received:', messageData);
@@ -74,16 +81,27 @@ export const useUserStore = defineStore('user', {
                 this.socketService.disconnect(channelNameToRemove);
                 
             });
-            socket.on('memberLeftChannel', (member: string) => {
-                console.log('member left channel:', member);
+            socket.on('memberLeftChannel', (memberString: string) => {
+                console.log('member left channel:', memberString);
                 if (this.loggedUser) {
                     const targetChannel = this.loggedUser.channels.find(
                         (ch) => ch.name === channelString
                     );
                     if (targetChannel) {
                         targetChannel.users = targetChannel.users.filter(
-                            (user) => user.nickName !== member
+                            (user) => user.nickName !== memberString
                         );
+                    }
+                }
+            });
+            socket.on('addedMember', (member: Member) => {
+                console.log('member joined channel:', member);
+                if (this.loggedUser && (this.loggedUser.nickName != member.nickName)) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users.push(member);
                     }
                 }
             });
@@ -228,6 +246,11 @@ export const useUserStore = defineStore('user', {
             socket.emit('deletedChannel'); // pre istotu ak by bol nas user admin a channel sa aj vymaze
             socket.emit('memberLeftChannel', this.loggedUser?.nickName);
             this.socketService.delete(name);
+            if (this.loggedUser) {
+                this.loggedUser.channels = this.loggedUser.channels.filter(
+                    (channel) => channel.name !== name
+                );
+            }
         } catch (error) {
             console.error('Delete channel error:', error);
         }
@@ -257,7 +280,8 @@ export const useUserStore = defineStore('user', {
                   userNickName: user
                 }
             );
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('addedMember', user);
         } catch (error) {
             console.error('add user to channel error:', error);
         }
@@ -271,6 +295,9 @@ export const useUserStore = defineStore('user', {
                     channelName: channel
                 }
             );
+            await this.loadChannels([channel]);
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('addedMember', this.loggedUser?.nickName);
             await this.reloadData();
         } catch (error) {
             console.error('join public channel error:', error);

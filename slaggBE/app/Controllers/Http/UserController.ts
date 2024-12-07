@@ -220,6 +220,11 @@ export default class UserController {
 
       await channel.related('users').detach([userToKick.id])
 
+      await KickRequest.query()
+            .where('channelId', channel.id)
+            .andWhere('targetId', userToKick.id)
+            .delete();
+
       return response.ok({
         message: `User '${userNickName}' has been kicked from the channel '${channelName}'.`,
       })

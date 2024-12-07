@@ -131,4 +131,21 @@ export default class SocketController {
     
   }
 
+  public async addedMember({socket, params}: WsContextContract, memberNickName: string) {
+    const channel = await Channel.query().where('name', params.channelName).preload('users').first()
+    if (channel) {
+      const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
+      if (memberInChannel) {
+        const memberData = {
+          id: memberInChannel.id,
+          email: memberInChannel.email,
+          nickName: memberInChannel.nickname,
+          kickRequests: [],
+          status: memberInChannel.state,
+        }
+        socket.nsp.emit('addedMember', memberData)
+      }
+    }
+  }
+
 }
