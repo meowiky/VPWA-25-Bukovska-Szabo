@@ -419,15 +419,16 @@ export const useUserStore = defineStore('user', {
         }
     },
 
-    async loadMessages(channelName: string) {
+    async loadMessages(channelName: string, messageId: number | null = null, limit: number = 3, callback: (messages: Message[]) => void | null = () => {}) {
         if (this.token) {
             const socket = this.socketService.connect(`${channelName}`, this.token);
-            socket.emit('getMessages');
+            socket.emit('getMessages', limit, messageId);
 
             socket.on('loadedMessages', (messageData: Message[]) => {
                 console.log('Messages received:', messageData);
 
                 this.channelMessages = messageData;
+                if (callback) callback(messageData);
             });
         }
     },
@@ -438,10 +439,7 @@ export const useUserStore = defineStore('user', {
 
     async setSelectedChannel(channel: Channel | null) {
         this.selectedChannel = channel;
-        if(channel) {
-            await this.loadMessages(channel.name);
-        }
-        else if(!channel) {
+        if(!channel) {
             this.channelMessages = [];
         }
     },

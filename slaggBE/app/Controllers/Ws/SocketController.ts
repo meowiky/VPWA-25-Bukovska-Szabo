@@ -7,7 +7,7 @@ import {DateTime} from "luxon";
 
 export default class SocketController {
   public async hello({ socket, params, auth }: WsContextContract) {
-    console.log(params.channelName)
+    // console.log(params.channelName)
 
     const authenticatedUser = auth.user as User | undefined
     if (!authenticatedUser) {
@@ -62,10 +62,10 @@ export default class SocketController {
     };
 
     socket.emit('channel', formattedChannel)
-    
+
   }
 
-  public async getMessages ({ socket, params }: WsContextContract) {
+  public async getMessages ({ socket, params }: WsContextContract, limit: number | null, oldestMessageId: number | null) {
     const channel = await Channel.query().where('name', params.channelName).preload('users').first()
 
     if (!channel) {
@@ -73,13 +73,36 @@ export default class SocketController {
       return
     }
 
-    const messages = await channel.related('messages').query().preload('user')
-    const messageData = messages.map((message) => ({
+    let messages: Message[]
+    if (!limit) {
+      messages = await channel.related('messages').query().preload('user')
+    }
+    else {
+      if (!oldestMessageId) {
+        let msg = await channel.related('messages').query().orderBy('id', 'desc').first()
+        oldestMessageId = msg?.id ?? null
+      }
+      if (!oldestMessageId) {
+        socket.emit('loadedMessages', [])
+        return
+      }
+      console.log(oldestMessageId)
+      messages = await channel.related('messages')
+        .query().preload('user')
+        .where('id', '<', oldestMessageId)
+        .orderBy('id', 'desc')
+        .limit(limit)
+      messages = messages.reverse()
+    }
+
+    const messageData = messages.map((message: Message) => ({
       id: message.id,
       content: message.message,
       sentAt: message.sentAt,
       sender: message.user.nickname
     }))
+
+    // console.log(messages.length, limit, oldestMessageId)
 
     socket.emit('loadedMessages', messageData)
   }
@@ -108,7 +131,7 @@ export default class SocketController {
       sentAt: newMessage.sentAt,
       sender: newMessage.user.nickname
     }
-    console.log(newMessageData)
+    // console.log(newMessageData)
 
     socket.nsp.emit('newMessage', newMessageData)
   }
@@ -128,7 +151,7 @@ export default class SocketController {
         socket.nsp.emit('memberLeftChannel', memberNickName)
       }
     }
-    
+
   }
 
   public async addedMember({socket, params}: WsContextContract, memberNickName: string) {
@@ -148,7 +171,7 @@ export default class SocketController {
     }
   }
 
-  public async reloadUser({socket, params}: WsContextContract, memberNickName: string) { 
+  public async reloadUser({socket, params}: WsContextContract, memberNickName: string) {
     const channel = await Channel.query().where('name', params.channelName).preload('users').first()
     if (channel) {
       const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
@@ -170,7 +193,7 @@ export default class SocketController {
           status: memberInChannel.state,
         }
         socket.nsp.emit('reloadUser', newMemberData);
-        
+
       }
     }
   }

@@ -13,16 +13,20 @@
       <q-card class="q-pa-md chat-container">
 
         <div class="message-list">
+          <div v-if="loading" class="loading-indicator">
+            <q-spinner />
+          </div>
+
           <q-infinite-scroll
             :key="messagesCompositeKey"
+            ref="infiniteScroll"
             @load="loadMoreMessages"
             :offset="100"
             :debounce="1000"
             reverse
           >
-            <!-- tu som zatial to zmenila z visibleMessages na messages lebo treba to zmenit tak ze sa loadne len poslednych idk napr 20 messagov a potom ak user scrollne vyssie tak sa loadne dalsich 20 messagov atd-->
             <q-chat-message
-              v-for="(message, index) in messages"
+              v-for="(message, index) in visibleMessages"
               :key="index"
               :name="message.sender"
               :text="[message.content]"
@@ -71,13 +75,17 @@
 //import {AppVisibility} from 'quasar';
 import { useUserStore } from 'src/stores/user';
 import type { Message, Member } from 'src/stores/models'
+import { ref } from 'vue';
+import {QInfiniteScroll} from "quasar";
 
 export default {
   setup() {
     const userStore = useUserStore();
+    const infiniteScroll = ref<QInfiniteScroll | null>(null);
 
     return {
       userStore,
+      infiniteScroll
     };
   },
   data() {
@@ -89,7 +97,8 @@ export default {
       visibleMessages: [] as Message[],
       simulateIncomingMessages: false,
       typingMember: null as Member | null,
-      fakeTypingMessage: 'This is the fake typing message.'
+      fakeTypingMessage: 'This is the fake typing message.',
+      lastVisibleMessage: null as Message | null | undefined
     };
   },
 
@@ -109,9 +118,6 @@ export default {
     allPublicChannels() {
       return this.userStore.publicChannels;
     },
-    messages() {
-      return this.userStore.channelMessages;
-    },
 
     messagesCompositeKey() {
       if (!this.loggedUser || !this.selectedChannel){
@@ -121,10 +127,10 @@ export default {
     }
   },
 
-  created() {
-    this.initMessages();
-    // this.simulateTypingMember();
-  },
+  // created() {
+  //   // this.initMessages();
+  //   // this.simulateTypingMember();
+  // },
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
@@ -132,6 +138,7 @@ export default {
         this.visibleMessages = [];
       }
       else if (newChannel !== oldChannel) {
+        this.visibleMessages = [];
         this.initMessages();
         // this.simulateTypingMember();
       }
@@ -146,23 +153,69 @@ export default {
   methods: {
 
     async initMessages() {
-      // if (!this.selectedChannel || !this.selectedChannel.name) {
-      //   console.warn('No valid channel selected. Skipping message initialization.');
-      //   this.visibleMessages = [];
-      //   return;
-      // }
+      if (!this.selectedChannel) {
+        return;
+      }
 
-      // try {
-      //   await this.userStore.fetchMessages(this.selectedChannel.name);
-      //   if (this.messages) {
-      //     this.visibleMessages = this.messages.slice(-this.itemsPerPage);
-      //   }
-      // } catch (error) {
-      //   console.error('Failed to fetch messages:', error);
-      //   this.visibleMessages = [];
-      // }
+      if (this.loading) {
+        if (this.infiniteScroll && this.infiniteScroll.stop) {
+          this.infiniteScroll.stop();
+        }
+        return;
+      }
+      this.loading = true;
+
+      await this.userStore.loadMessages(
+        this.selectedChannel.name,
+        null,
+        this.itemsPerPage,
+        (messages: Message[]) => {
+          this.visibleMessages = messages
+          this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
+
+          console.trace(this.lastVisibleMessage)
+        }
+      )
+
+      this.loading = false;
     },
 
+    async loadMoreMessages() {
+      if (!this.selectedChannel || !this.userStore.channelMessages) {
+        return;
+      }
+
+      if (this.loading) {
+        this.infiniteScroll?.stop();
+        return;
+      }
+      this.loading = true;
+
+      if (this.userStore.channelMessages.length < this.itemsPerPage) {
+        this.infiniteScroll?.stop();
+        this.loading = false;
+        return;
+      }
+
+      try {
+        const currentMessages = this.visibleMessages;
+        await this.userStore.loadMessages(
+          this.selectedChannel.name,
+          this.lastVisibleMessage?.id ?? null,
+          this.itemsPerPage,
+          (messages: Message[]) => {
+            this.visibleMessages = [...messages, ...currentMessages];
+            this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
+
+            console.trace(this.lastVisibleMessage)
+          }
+        );
+      } catch (error) {
+        console.error('Error loading more messages:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
 
     isLoggedUser(message: Message) {
       if (this.loggedUser) {
@@ -232,34 +285,20 @@ export default {
       // }
     },
 
-    loadMoreMessages() {
-      if (this.loading || !this.messages) return;
-      this.loading = true;
-
-
-      const currentVisibleCount = this.visibleMessages.length;
-      const totalMessages = this.messages.length;
-      const start = Math.max(totalMessages - currentVisibleCount - this.itemsPerPage, 0);
-      const newMessages = this.messages.slice(start, totalMessages - currentVisibleCount);
-
-      if (newMessages.length > 0) {
-        // This will cause a jump to the new batch of messages
-        this.visibleMessages = [...newMessages, ...this.visibleMessages];
-      }
-      this.loading = false;
-    },
 
     async sendMessage() {
       if (!this.newMessage || this.newMessage.length === 0) return;
       if (this.selectedChannel) {
         await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
-        if (this.messages) {
-          this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
+        if (this.userStore.channelMessages) {
+          // TODO REWRITE THIS TO TAKE THE NEW MESSAGE AND PUSH IT AT 0th INDEX
+          this.visibleMessages = [...this.userStore.channelMessages.slice(-this.itemsPerPage)];
         }
         // TODO:: Scroll down to new message?
         this.newMessage = '';
       }
     },
+
 
     simulateTypingMember() {
       // const otherMembers = this.selectedChannel.users.filter(
@@ -480,4 +519,12 @@ export default {
   padding: 10px;
   text-align: center;
 }
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+}
+
 </style>
