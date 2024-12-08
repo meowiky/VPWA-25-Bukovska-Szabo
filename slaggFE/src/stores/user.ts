@@ -59,6 +59,10 @@ export const useUserStore = defineStore('user', {
         }
     },
 
+    toggleMentionsOnly() {
+        this.mentionsOnly = !this.mentionsOnly;
+    },
+
     async notifyNewMessage(message: Message, channelName: string | null = null) {
       if (
         !this.ctx ||
@@ -285,6 +289,8 @@ export const useUserStore = defineStore('user', {
                 this.token = null;
                 this.isUserLoggedIn = false;
                 this.loggedUser = null;
+                this.selectedChannel = null;
+
             }
         } catch (error) {
             console.error('Logout error:', error);

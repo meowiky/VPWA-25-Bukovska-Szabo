@@ -26,7 +26,7 @@
           class="user-status-selector"
         />
 
-        <q-toggle v-model="mentionsOnly" label="Mentions Only" @click="toggleMentionsOnly" color="positive" />
+        <q-toggle v-model="mentionsOnly" label="Mentions Only" @update:model-value="toggleMentionsOnly" color="positive" />
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
         <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
@@ -199,7 +199,6 @@ export default {
       isPrivate: false,
       inviteNickName: '',
       inviteError: '',
-      mentionsOnly: false,
       statusOptions: [
         { label: 'Online', value: 'online' },
         { label: 'Offline', value: 'offline' },
@@ -220,7 +219,8 @@ export default {
       if (newVal === null) {
         this.$router.push('/signin/login');
       }
-    }
+    },
+
   },
 
   computed: {
@@ -242,6 +242,10 @@ export default {
     rightDrawerOpen() {
       return this.userStore.rightDrawerOpen;
     },
+    mentionsOnly() {
+      return this.userStore.mentionsOnly;
+    }
+
   },
 
   methods: {
@@ -380,7 +384,7 @@ export default {
     },
 
     toggleMentionsOnly() {
-
+      this.userStore.toggleMentionsOnly();
     },
 
     updateUserStatus (value: string) {
