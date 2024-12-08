@@ -121,7 +121,7 @@ export const useUserStore = defineStore('user', {
                         (channel) => channel.name === addedChannel.name
                     );
                     if (!channelExists) {
-                        this.loggedUser?.channels.push(addedChannel);
+                        this.loggedUser.channels.unshift(addedChannel);
                     }
                 }
                 else {
@@ -466,7 +466,7 @@ export const useUserStore = defineStore('user', {
             socket.on('channel', (addedChannel: Channel) => {
                 console.log('channel received:', addedChannel);
                 if (this.loggedUser?.channels) {
-                    this.loggedUser?.channels.push(addedChannel);
+                    this.loggedUser.channels.unshift(addedChannel);
                 }
                 else {
                     if (this.loggedUser) {
