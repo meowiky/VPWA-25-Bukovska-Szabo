@@ -11,8 +11,12 @@
         </q-toolbar-title>
 
         <q-select
-          v-model="currentUserStatus"
+          v-if="loggedUser"
+          v-model="loggedUser.state"
           :options="statusOptions"
+          option-value="value"
+          @update:model-value="onStatusChange"
+          emit-value
           transition-show="jump-up"
           transition-hide="jump-up"
           filled
@@ -22,7 +26,7 @@
           class="user-status-selector"
         />
 
-        <q-toggle v-model="mentionsOnly" label="Mentions Only" @click="toggleMentionsOnly" color="positive" />
+        <q-toggle v-model="mentionsOnly" label="Mentions Only" @update:model-value="toggleMentionsOnly" color="positive" />
         <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
         <q-btn dense flat round icon="logout" @click="logout" />
       </q-toolbar>
@@ -32,7 +36,7 @@
       <q-list>
         <template v-if="loggedUser">
         <q-item-label header>Channels</q-item-label>
-
+        <template v-if="loggedUser.channels && loggedUser.channels.length > 0">
         <q-item
           clickable
           v-for="channel in loggedUser.channels"
@@ -46,18 +50,18 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn dense flat icon="exit_to_app" @click="leaveChannelAction(channel)" />
+            <q-btn dense flat icon="exit_to_app" @click.stop="leaveChannelAction(channel)" />
             <q-btn
               dense
               flat
               v-if="channel.admin.email === loggedUser.email"
               icon="delete"
               color="negative"
-              @click="deleteChannelAction(channel)"
+              @click.stop="deleteChannelAction(channel)"
             />
           </q-item-section>
         </q-item>
-
+      </template>
         <q-item clickable @click="openCreateChannelDialog">
           <q-item-section avatar>
             <q-icon name="add" />
@@ -133,7 +137,7 @@
 
         <q-card-section>
           <q-list>
-            <q-item v-for="channel in filteredPublicChannels" :key="channel.name">
+            <q-item v-for="channel in allPublicChannels" :key="channel.name">
               <q-item-section>{{ channel.name }}</q-item-section>
               <q-item-section side>
                 <q-btn icon="add" @click="joinChannel(channel.name)" />
@@ -171,10 +175,16 @@
 <script lang="ts">
 import { useUserStore } from 'src/stores/user';
 import type { Member, Channel } from 'src/stores/models'
+import { useQuasar } from 'quasar'
+import { onMounted } from "vue";
 
 export default {
   setup() {
     const userStore = useUserStore();
+
+    onMounted(() => {
+      userStore.setContext(useQuasar());
+    })
 
     return {
       userStore,
@@ -189,22 +199,19 @@ export default {
       isPrivate: false,
       inviteNickName: '',
       inviteError: '',
-      mentionsOnly: false,
-      currentUserStatus: 'Online',
       statusOptions: [
         { label: 'Online', value: 'online' },
         { label: 'Offline', value: 'offline' },
         { label: 'DND', value: 'DND' },
       ],
       rightDrawerOpenLocal: false,
-      channelIsLoading: false,
+      channelActionLoading: false,
     };
   },
 
+
+
   watch: {
-    currentUserStatus(status) {
-      this.updateUserStatus(status.value)
-    },
     rightDrawerOpen(newVal) {
       this.rightDrawerOpenLocal = newVal;
     },
@@ -212,7 +219,8 @@ export default {
       if (newVal === null) {
         this.$router.push('/signin/login');
       }
-    }
+    },
+
   },
 
   computed: {
@@ -234,35 +242,40 @@ export default {
     rightDrawerOpen() {
       return this.userStore.rightDrawerOpen;
     },
-    filteredPublicChannels() {
-      if (!this.loggedUser || !this.loggedUser.channels) {
-        return this.allPublicChannels;
-      }
-      return this.allPublicChannels.filter(
-        channel => !this.loggedUser?.channels.some(userChannel => userChannel.name === channel.name)
-      );
-    },
+    mentionsOnly() {
+      return this.userStore.mentionsOnly;
+    }
+
   },
 
   methods: {
+    async onStatusChange(newStatus: 'online' | 'DND' | 'offline') {
+      if (this.loggedUser) {
+        this.loggedUser.state = newStatus;
+        await this.userStore.changeStatus(newStatus);
+      }
+    },
     async createChannel() {
       await this.userStore.createNewChannel(this.newChannelName, this.isPrivate);
       this.createChannelDialog = false;
+      this.newChannelName = '';
+      this.isPrivate = false;
     },
 
-    // TODO:: If we are focused on the channel that we are leaving we get focus stuck on it
-    // TODO:: We get 404 on messages get upon leaving
     async leaveChannelAction(channel: Channel) {
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
       await this.userStore.leaveChannel(channel.name);
-
-      if (this.selectedChannel && this.selectedChannel.name === channel.name) {
-        this.userStore.setSelectedChannel(null);
-      }
+      this.channelActionLoading = false;
     },
 
     async deleteChannelAction(channel: Channel) {
+      if (this.channelActionLoading) return;
+      this.channelActionLoading = true;
       await this.userStore.deleteChannel(channel.name);
+      this.channelActionLoading = false;
     },
+
 
     // cleanUpChannelState(channelName) {
     //   const updatedChannels = this.loggedUser.channels.filter(c => c.name !== channelName);
@@ -291,7 +304,8 @@ export default {
       this.createChannelDialog = true;
     },
 
-    openPublicChannelsDialog() {
+    async openPublicChannelsDialog() {
+      this.userStore.getJoinablePublicChannels();
       this.publicChannelsDialog = true;
     },
 
@@ -370,7 +384,7 @@ export default {
     },
 
     toggleMentionsOnly() {
-      
+      this.userStore.toggleMentionsOnly();
     },
 
     updateUserStatus (value: string) {

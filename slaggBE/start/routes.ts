@@ -24,7 +24,7 @@ Route.group(() => {
   Route.post('/register', 'AuthController.register').as('auth.register')
   Route.post('/login', 'AuthController.login').as('auth.login')
   Route.delete('/logout', 'AuthController.logout').as('auth.logout').middleware('auth')
-  Route.get('/me', 'AuthController.me').as('auth.me')
+  Route.get('/me', 'AuthController.me').as('auth.me').middleware('auth')
 })
 .prefix('/api')
 
@@ -40,5 +40,8 @@ Route.group(() => {
   Route.post('/messages', 'UserController.saveMessage').as('user.saveMessage').middleware('auth')
   Route.get('/isUserInChannel', 'UserController.isUserInChannel').as('user.isUserInChannel').middleware('auth')
   Route.get('/cleanupInactiveChannels', 'UserController.cleanupInactiveChannels').as('user.cleanupInactiveChannels')
+  Route.get('/users', 'UserController.getAllOtherUsers').as('user.getAllOtherUsers').middleware('auth')
+  Route.get('/joinable-channels', 'UserController.getJoinablePublicChannels').as('user.getJoinablePublicChannels').middleware('auth')
+  Route.post('/changeStatus', 'UserController.changeUserStatus').as('user.changeUserStatus').middleware('auth')
 })
 .prefix('/api')

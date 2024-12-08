@@ -13,8 +13,13 @@
       <q-card class="q-pa-md chat-container">
 
         <div class="message-list">
+          <div v-if="loading" class="loading-indicator">
+            <q-spinner />
+          </div>
+
           <q-infinite-scroll
             :key="messagesCompositeKey"
+            ref="infiniteScroll"
             @load="loadMoreMessages"
             :offset="100"
             :debounce="1000"
@@ -32,13 +37,6 @@
           </q-infinite-scroll>
         </div>
 
-        <div v-if="typingMember" class="typing-banner">
-          <q-banner type="info" dense>
-            <q-icon name="chat" />
-            {{ typingMember.nickName }} is typing: "{{ fakeTypingMessage }}"
-          </q-banner>
-        </div>
-
         <div class="bottom-section">
           <div v-if="displayedError" class="error-banner">
             <q-banner type="negative" dense>
@@ -48,8 +46,23 @@
           </div>
 
           <div class="message-input">
-            <q-input v-model="newMessage" label="Type a message..." outlined class="message-text-input" />
+            <q-input v-model="newMessage"
+                     label="Type a message..."
+                     outlined class="message-text-input"
+                     @update:model-value="onMessageInputChange"
+            />
             <q-btn @click="handleMessage" label="Send" color="primary" />
+          </div>
+
+          <div
+            v-if="typingMember"
+            class="typing-banner"
+            :key="typingCompositeKey"
+          >
+            <q-banner type="info" dense>
+              <q-icon name="chat" />
+              {{ typingMember.nickName }} is typing: "{{ typingMessage }}"
+            </q-banner>
           </div>
 
 <!--          <div class="debug-section">-->
@@ -69,14 +82,18 @@
 <script lang="ts">
 //import {AppVisibility} from 'quasar';
 import { useUserStore } from 'src/stores/user';
-import type { Message, Member } from 'src/stores/models'
+import type {Message} from 'src/stores/models'
+import { ref } from 'vue';
+import {QInfiniteScroll} from "quasar";
 
 export default {
   setup() {
     const userStore = useUserStore();
+    const infiniteScroll = ref<QInfiniteScroll | null>(null);
 
     return {
       userStore,
+      infiniteScroll
     };
   },
   data() {
@@ -87,8 +104,8 @@ export default {
       itemsPerPage: 20,
       visibleMessages: [] as Message[],
       simulateIncomingMessages: false,
-      typingMember: null as Member | null,
-      fakeTypingMessage: 'This is the fake typing message.'
+      lastVisibleMessage: null as Message | null | undefined,
+      typingTimeout: null as ReturnType<typeof setTimeout> | null
     };
   },
 
@@ -108,8 +125,12 @@ export default {
     allPublicChannels() {
       return this.userStore.publicChannels;
     },
-    messages() {
-      return this.userStore.channelMessages;
+
+    typingMessage() {
+      return this.userStore.typingMessage;
+    },
+    typingMember() {
+      return this.userStore.typingMember;
     },
 
     messagesCompositeKey() {
@@ -117,27 +138,29 @@ export default {
         return '';
       }
       return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
+    },
+
+    typingCompositeKey() {
+      if (!this.typingMessage || !this.typingMember){
+        return '';
+      }
+
+      return `${this.typingMessage}-${this.typingMember?.nickName}`
     }
   },
 
-  created() {
-    this.initMessages();
-    // this.simulateTypingMember();
-  },
+  // created() {
+  //   // this.initMessages();
+  //   // this.simulateTypingMember();
+  // },
 
   watch: {
     selectedChannel(newChannel, oldChannel) {
-      if (newChannel == null) {
-        this.visibleMessages = [];
-      }
-
       if (!newChannel) {
         this.visibleMessages = [];
-        // TODO:: Clear out the message list and return to "Please select channel screen"
-        return;
-
       }
       else if (newChannel !== oldChannel) {
+        this.visibleMessages = [];
         this.initMessages();
         // this.simulateTypingMember();
       }
@@ -151,15 +174,81 @@ export default {
 
   methods: {
 
+    onMessageInputChange(newValue: string | number | null) {
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+      }
+
+      this.userStore.emitTyping(newValue)
+      this.typingTimeout = setTimeout(() => {
+        this.userStore.emitStopTyping();
+        this.typingTimeout = null;
+      }, 5000);
+    },
+
     async initMessages() {
-      if (!this.selectedChannel || !this.selectedChannel.name) {
-        console.warn('No valid channel selected. Skipping message initialization.');
-        this.visibleMessages = [];
+      if (!this.selectedChannel) {
         return;
       }
-      await this.userStore.fetchMessages(this.selectedChannel.name);
-      if (this.selectedChannel && this.messages) {
-        this.visibleMessages = this.messages.slice(-this.itemsPerPage);
+
+      if (this.loading) {
+        if (this.infiniteScroll && this.infiniteScroll.stop) {
+          this.infiniteScroll.stop();
+        }
+        return;
+      }
+      this.loading = true;
+
+      await this.userStore.loadMessages(
+        this.selectedChannel.name,
+        null,
+        this.itemsPerPage,
+        (messages: Message[]) => {
+          this.visibleMessages = messages
+          this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
+        }
+      )
+
+      this.loading = false;
+    },
+
+    async loadMoreMessages() {
+      if (!this.selectedChannel || !this.userStore.channelMessages) {
+        return;
+      }
+
+      if (this.loading) {
+        this.infiniteScroll?.stop();
+        return;
+      }
+      this.loading = true;
+
+      if (this.userStore.channelMessages.length < this.itemsPerPage) {
+        this.infiniteScroll?.stop();
+        this.loading = false;
+        return;
+      }
+
+      try {
+        const currentMessages = this.visibleMessages;
+        await this.userStore.loadMessages(
+          this.selectedChannel.name,
+          this.lastVisibleMessage?.id ?? null,
+          this.itemsPerPage,
+          (messages: Message[]) => {
+            if (messages && messages.length === 0) {
+              this.infiniteScroll?.stop();
+              this.loading = false;
+              return;
+            }
+            this.visibleMessages = [...messages, ...currentMessages];
+            this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
+          }
+        );
+      } catch (error) {
+        console.error('Error loading more messages:', error);
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -213,7 +302,7 @@ export default {
       // }
       // this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
 
-      // // TODO:: TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
+      // //  TURN AROUND CONDITION !AppVisibility.appVisible AFTER IMPLEMENTING FULL NOTIFICATIONS AS IT IS REQUIRED IN ASSIGNMENT
 
       // if (this.loggedUser.status === 'DND') {
       //   return;
@@ -231,33 +320,15 @@ export default {
       // }
     },
 
-    loadMoreMessages() {
-      if (this.loading || !this.messages) return;
-      this.loading = true;
-
-
-      const currentVisibleCount = this.visibleMessages.length;
-      const totalMessages = this.messages.length;
-      const start = Math.max(totalMessages - currentVisibleCount - this.itemsPerPage, 0);
-      const newMessages = this.messages.slice(start, totalMessages - currentVisibleCount);
-
-      if (newMessages.length > 0) {
-        // This will cause a jump to the new batch of messages
-        this.visibleMessages = [...newMessages, ...this.visibleMessages];
-      }
-      this.loading = false;
-    },
 
     async sendMessage() {
+      if (!this.newMessage || this.newMessage.length === 0) return;
       if (this.selectedChannel) {
         await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
-        await this.userStore.fetchMessages(this.selectedChannel.name);
-        if (this.messages) {
-          this.visibleMessages = [...this.messages.slice(-this.itemsPerPage)];
-        }
         this.newMessage = '';
       }
     },
+
 
     simulateTypingMember() {
       // const otherMembers = this.selectedChannel.users.filter(
@@ -293,7 +364,7 @@ export default {
           const channelToJoin = this.allPublicChannels.find((channel) => channel.name === channelName);
           if (!channelToJoin) {
             const isPrivate = args.length > 1 && args[1] === '[private]';
-              
+
             await this.userStore.createNewChannel(channelName, isPrivate);
             break;
           }
@@ -337,7 +408,6 @@ export default {
           }
           break;
         }
-        // TODO:: Admin kick works but check vote kick
         case '/kick': {
           const nickName = args[0] || '';
           if (nickName == ''){
@@ -479,4 +549,12 @@ export default {
   padding: 10px;
   text-align: center;
 }
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+}
+
 </style>

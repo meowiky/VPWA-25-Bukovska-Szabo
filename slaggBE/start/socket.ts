@@ -1,22 +1,16 @@
-/*
-|--------------------------------------------------------------------------
-| Websocket events
-|--------------------------------------------------------------------------
-|
-| This file is dedicated for defining websocket namespaces and event handlers.
-|
-*/
-
 import Ws from '@ioc:Ruby184/Socket.IO/Ws'
 
-Ws.namespace('/')
-  .connected(({ socket }) => {
-    console.log('new websocket connection: ', socket.id)
-  })
-  .disconnected(({ socket }, reason) => {
-    console.log('websocket disconnecting: ', socket.id, reason)
-  })
-  .on('hello', ({ socket }, msg: string) => {
-    console.log('websocket greeted: ', socket.id, msg)
-    return 'hi'
-  })
+Ws.namespace('/socket.io/:channelName')
+  .connected("SocketController.hello")
+  .disconnected("SocketController.hello")
+  .on("addMessage", "SocketController.addMessage")
+  .on("getMessages", "SocketController.getMessages")
+  .on("deletedChannel", "SocketController.deletedChannel")
+  .on("memberLeftChannel", "SocketController.memberLeftChannel")
+  .on("addedMember", "SocketController.addedMember")
+  .on("reloadUser", "SocketController.reloadUser")
+  .on("typing", "SocketController.typing")
+  .on("stopTyping", "SocketController.stopTyping")
+
+  Ws.namespace('/socket.io/user/:userNickname')
+  .on("newChannel", "SocketController.inviteUser")

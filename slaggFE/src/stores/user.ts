@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia';
-import type { Channel, JoinableChannel, Message, OtherUser, User } from './models';
+import type { Channel, JoinableChannel, Member, Message, OtherUser, User } from './models';
+import { UserState } from './models';
 import { api } from 'src/boot/axios';
+import socketService from 'src/services/socket';
+import { SocketService } from 'src/services/socket';
+import {AppVisibility, QVueGlobals} from "quasar";
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -13,6 +17,11 @@ export const useUserStore = defineStore('user', {
     publicChannels: [] as JoinableChannel[],
     rightDrawerOpen: true as boolean,
     channelMessages: null as Message[] | null,
+    queuedMessages: [] as Message[],
+    socketService: socketService as SocketService,
+    ctx: null as QVueGlobals | null,
+    typingMember: null as Member | null,
+    typingMessage: '' as string | number | null,
   }),
   actions: {
     async initializeAuth() {
@@ -24,11 +33,23 @@ export const useUserStore = defineStore('user', {
                 api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
                 const response = await api.get('/api/me');
                 if (response) {
-                    const { user, allPublicChannels, allUsers } = response.data;
-                    this.loggedUser = user;
-                    this.publicChannels = allPublicChannels;
-                    this.usersAsMemberInterface = allUsers;
+                    const { user, channels } = response.data;
+                    this.loggedUser = {
+                        id: user.id,
+                        email: user.email,
+                        nickName: user.nickName,
+                        registeredAt: user.registeredAt,
+                        name: user.name || null,
+                        surname: user.surname || null,
+                        state: user.state || null,
+                        lastActiveState: user.lastActiveState,
+                        channels: [],
+                    };
                     this.isUserLoggedIn = true;
+                    await this.getAllUsers();
+                    await this.getJoinablePublicChannels();
+                    await this.loadChannels(channels);
+                    await this.listenToUserSocket();
                 }
             }
         } catch (error) {
@@ -37,6 +58,208 @@ export const useUserStore = defineStore('user', {
             localStorage.removeItem('token');
             this.token = null;
         }
+    },
+
+    toggleMentionsOnly() {
+        this.mentionsOnly = !this.mentionsOnly;
+    },
+
+    async notifyNewMessage(message: Message, channelName: string | null = null) {
+      if (
+        !this.ctx ||
+        (this.loggedUser && this.loggedUser.nickName == message.sender) ||
+        (this.loggedUser && this.loggedUser.state == UserState.DND) ||
+        (this.loggedUser && this.mentionsOnly && !message.content.includes(`@${this.loggedUser.nickName}`))
+        || !AppVisibility.appVisible
+      ) { return }
+
+      let notificationMessage = `${message.sender}: ${message.content}`
+      if (channelName){
+          notificationMessage = `${message.sender} in ${channelName}: ${message.content}`
+      }
+
+      this.ctx.notify({
+        message: notificationMessage,
+        color: 'info',
+        position: 'top',
+        timeout: 5000
+      })
+
+      if (Notification && Notification.permission !== 'granted') {
+        await Notification.requestPermission()
+      }
+
+      if (Notification) {
+        const notification = new Notification(`${message.sender} in ${channelName}`, {
+          body: message.content,
+          icon: '/favicon.ico'
+        })
+        notification.onclick = () => {
+          window.focus()
+          notification.close()
+        }
+      }
+    },
+
+    async emitTyping(message: string | number | null) {
+      const socket = this.socketService.connect(`${this.selectedChannel?.name}`, this.token as string);
+      socket.emit('typing', this.loggedUser?.nickName, message);
+    },
+
+    async emitStopTyping() {
+      const socket = this.socketService.connect(`${this.selectedChannel?.name}`, this.token as string);
+      socket.emit('stopTyping', this.loggedUser?.nickName);
+    },
+
+    async listenToUserSocket() {
+        if (this.loggedUser && this.token) {
+            const socket =  this.socketService.connectToUserSocket(this.loggedUser.nickName, this.token);
+            socket.on('newChannel', (addedChannel: Channel) => {
+                console.log('added to new channel', addedChannel);
+                if (this.loggedUser?.channels) {
+                    const channelExists = this.loggedUser.channels.some(
+                        (channel) => channel.name === addedChannel.name
+                    );
+                    if (!channelExists) {
+                        this.loggedUser.channels.unshift(addedChannel);
+                    }
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
+            });
+        }
+        
+    },
+
+    async loadChannels(channels: string[]) {
+        channels.forEach((channelString) => {
+            const socket = this.socketService.connect(`${channelString}`, this.token as string);
+            socket.on('channel', (addedChannel: Channel) => {
+                console.log('channel received:', addedChannel);
+                if (this.loggedUser?.channels) {
+                    this.loggedUser?.channels.push(addedChannel);
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
+            });
+            socket.on('newMessage', (messageData: Message) => {
+                console.log('New message received:', messageData);
+                if (this.loggedUser && this.loggedUser.state == UserState.OFFLINE) {
+                  this.queuedMessages.push(messageData)
+                  return
+                }
+                this.notifyNewMessage(messageData, channelString);
+                if (this.selectedChannel && this.selectedChannel.name === channelString) {
+                    if (this.channelMessages) {
+                        this.channelMessages.push(messageData);
+                    }
+                    else {
+                        this.channelMessages = [messageData];
+                    }
+                }
+            });
+            socket.on('deletedChannel', (channelNameToRemove: string) => {
+                console.log('deleted channel:', channelNameToRemove);
+                if (this.loggedUser) {
+                    this.loggedUser.channels = this.loggedUser.channels.filter(
+                        (channel) => channel.name !== channelNameToRemove
+                    );
+                }
+                this.socketService.disconnect(channelNameToRemove);
+
+            });
+            socket.on('memberLeftChannel', (memberString: string) => {
+                console.log('member left channel:', memberString);
+                if (this.loggedUser) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users = targetChannel.users.filter(
+                            (user) => user.nickName !== memberString
+                        );
+                    }
+                }
+            });
+            socket.on('addedMember', (member: Member) => {
+                console.log('member joined channel:', member);
+                if (this.loggedUser && (this.loggedUser.nickName != member.nickName)) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users.push(member);
+                    }
+                }
+            });
+            socket.on('reloadUser', (changedMember: Member) => {
+                console.log('reloaded user', changedMember);
+                if (this.loggedUser) {
+                    const targetChannel = this.loggedUser.channels.find(
+                        (ch) => ch.name === channelString
+                    );
+                    if (targetChannel) {
+                        targetChannel.users = targetChannel.users.filter(
+                            (user) => user.nickName !== changedMember.nickName
+                        );
+                        if (targetChannel.users) {
+                            targetChannel.users.push(changedMember);
+                        }
+                        else {
+                            targetChannel.users = [changedMember];
+                        }
+                    }
+
+                    if (this.queuedMessages && this.queuedMessages.length > 0) {
+                        this.queuedMessages.forEach((message) => {
+                            this.notifyNewMessage(message, channelString);
+                            if (this.channelMessages) {
+                                this.channelMessages.push(message);
+                            }
+                            else {
+                                this.channelMessages = [message];
+                            }
+                        });
+                        this.queuedMessages = [];
+                    }
+                }
+            });
+
+          socket.on('typing', (data) => {
+
+            if (data.nickname === this.loggedUser?.nickName) {
+              return
+            }
+
+            this.getAllUsers();
+
+
+            const foundUser = this.usersAsMemberInterface.find(user => user.nickName == data.nickname);
+            this.typingMember = foundUser ?
+              { id: 0, email: '', nickName: foundUser.nickName, kickRequests: null, status: null } :
+              null;
+
+
+
+            // this.typingMember = this.usersAsMemberInterface.find(user => user.nickName == data.nickname) ?? null;
+            // this.typingMember = this.usersAsMemberInterface.find(user => user.nickName == data.nickname)
+
+
+            this.typingMessage = data.message
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          socket.on('stopTyping', (nickname) => {
+            this.typingMessage = '';
+            this.typingMember = null
+          });
+        });
     },
     async login(email: string, password: string) {
         try {
@@ -53,12 +276,14 @@ export const useUserStore = defineStore('user', {
             return false;
         }
     },
-    async register(nickName: string, email: string, password: string) {
+    async register(nickName: string, email: string, password: string, name: string, surname: string) {
         try {
             const data = {
                 nickname: nickName,
                 email: email,
                 password: password,
+                name: name,
+                surname: surname
             };
             const response = await api.post('/api/register', data);
             const token = response.data.token;
@@ -76,7 +301,11 @@ export const useUserStore = defineStore('user', {
     },
 
     async logout() {
-        try { 
+        try {
+            for (const channelName in this.socketService.sockets) {
+                this.socketService.disconnect(channelName);
+            }
+            this.socketService.deleteAll();
             const response = await api.delete('/api/logout');
             if (response.data.message == 'Logout successful') {
                 localStorage.removeItem('token');
@@ -84,19 +313,40 @@ export const useUserStore = defineStore('user', {
                 this.token = null;
                 this.isUserLoggedIn = false;
                 this.loggedUser = null;
+                this.selectedChannel = null;
+
             }
         } catch (error) {
             console.error('Logout error:', error);
         }
     },
 
-    async reloadData() {
-        try { 
-            const response = await api.get('/api/me');
+    async changeStatus(status: UserState | 'online' | 'DND' | 'offline') {
+        try {
+            const data = {
+                status: status,
+            };
+            const response = await api.post('/api/changeStatus', data);
+            if (this.loggedUser) {
+                this.loggedUser.state = response.data.status;
+                if(this.loggedUser.channels){
+                    this.loggedUser.channels.forEach((channel) => {
+                        const socket = this.socketService.connect(`${channel.name}`, this.token as string);
+                        socket.emit('reloadUser', this.loggedUser?.nickName);
+                    });
+                }
+            }
+
+        } catch (error) {
+            console.error('Change status error:', error);
+        }
+    },
+
+    async getAllUsers() {
+        try {
+            const response = await api.get('/api/users');
             if (response) {
-                const { user, allPublicChannels, allUsers } = response.data;
-                this.loggedUser = user;
-                this.publicChannels = allPublicChannels;
+                const { allUsers } = response.data;
                 this.usersAsMemberInterface = allUsers;
             }
         } catch (error) {
@@ -104,61 +354,90 @@ export const useUserStore = defineStore('user', {
         }
     },
 
+    async getJoinablePublicChannels() {
+        try {
+            const response = await api.get('/api/joinable-channels');
+            if (response) {
+                const { allPublicChannels } = response.data;
+                this.publicChannels = allPublicChannels;
+            }
+        } catch (error) {
+            console.error('Reload error:', error);
+        }
+    },
+
     async createNewChannel(name: string, isPrivate: boolean) {
-        try { 
+        try {
             const data = {
                 name: name,
                 isPrivate: isPrivate
             };
             await api.post('/api/createChannel', data);
-            await this.reloadData();
+            await this.loadChannels([name]);
         } catch (error) {
             console.error('Create new channel error:', error);
         }
     },
 
     async deleteChannel(name: string){
-        try { 
+        try {
             await api.delete('/api/deleteChannel', {
                 data: {
                     name: name,
                 }
             });
-            await this.reloadData();
+            if (this.selectedChannel?.name == name) {
+                this.selectedChannel = null;
+            }
+            const socket = this.socketService.connect(`${name}`, this.token as string);
+            socket.emit('deletedChannel');
+            this.socketService.delete(name);
         } catch (error) {
             console.error('Delete channel error:', error);
         }
     },
 
     async leaveChannel(name: string){
-        try { 
+        try {
             await api.delete('/api/leaveChannel', {
                 data: {
                     name: name,
                 }
             });
-            await this.reloadData();
+            if (this.selectedChannel?.name == name) {
+              this.selectedChannel = null;
+            }
+            const socket = this.socketService.connect(`${name}`, this.token as string);
+            socket.emit('deletedChannel'); // pre istotu ak by bol nas user admin a channel sa aj vymaze
+            socket.emit('memberLeftChannel', this.loggedUser?.nickName);
+            this.socketService.delete(name);
+            if (this.loggedUser) {
+                this.loggedUser.channels = this.loggedUser.channels.filter(
+                    (channel) => channel.name !== name
+                );
+            }
         } catch (error) {
             console.error('Delete channel error:', error);
         }
     },
 
     async kickUserFromChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.delete('/api/kickUserFromChannel', {
                 data: {
                     channelName: channel,
                     userNickName: user
                 }
             });
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('memberLeftChannel', user);
         } catch (error) {
             console.error('Kick user from channel error:', error);
         }
     },
 
     async addUserToChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.post(
                 '/api/addUserToChannel',
                 {
@@ -166,28 +445,46 @@ export const useUserStore = defineStore('user', {
                   userNickName: user
                 }
             );
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('addedMember', user);
+            const socketUser = this.socketService.connectForInviteUser(user, this.token as string);
+            socketUser.emit('newChannel', channel);
         } catch (error) {
             console.error('add user to channel error:', error);
         }
     },
 
     async joinPublicChannel(channel: string) {
-        try { 
+        try {
             await api.post(
                 '/api/joinPublicChannel',
                 {
                     channelName: channel
                 }
             );
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.on('channel', (addedChannel: Channel) => {
+                console.log('channel received:', addedChannel);
+                if (this.loggedUser?.channels) {
+                    this.loggedUser.channels.unshift(addedChannel);
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
+            });
+            socket.emit('addedMember', this.loggedUser?.nickName);
+            //aby sa stihol connectnut a potom zavolame loadChannels v ktorom sa uz nebude connectovat este raz, len pocuvat na emity
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await this.loadChannels([channel]);
         } catch (error) {
             console.error('join public channel error:', error);
         }
     },
 
     async requestKickUserFromChannel(channel: string, user: string) {
-        try { 
+        try {
             await api.post(
                 '/api/requestKickUserFromChannel',
                 {
@@ -195,52 +492,51 @@ export const useUserStore = defineStore('user', {
                     userNickName: user
                 }
             );
-            await this.reloadData();
+            const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.emit('memberLeftChannel', user); // pre istotu, ak by bol member uz vyhodeny lebo toto bol 3 request
+            socket.emit('reloadUser', user);
         } catch (error) {
             console.error('request kick user from channel error:', error);
         }
     },
 
-    async fetchMessages(channelName: string) {
-        try { 
-            const response = await api.get('/api/messages', {
-                params: {
-                    channelName
-                }
-            });
-            this.channelMessages = response.data.data;
-        } catch (error) {
-            console.error('fetch messages error:', error);
-        }
-    },
-
     async sendNewMessage(channel: string, message: string) {
-        try { 
-            await api.post(
-                '/api/messages',
-                {
-                  channelName: channel,
-                  message
-                },
-            );
-            await this.reloadData();
+        try {
+            if (!this.socketService.sockets[channel]) {
+              return;
+            }
+            this.socketService.sockets[channel].emit('addMessage', message );
         } catch (error) {
             console.error('send message error:', error);
         }
     },
 
     async isUserInChannel(channel: string) {
-        try { 
+        try {
             const response = await api.get('/api/isUserInChannel', {
                 params: {
                     channelName: channel
                 }
             });
-    
+
             return response.data || false;
         } catch (error) {
             console.error('is user in channel error:', error);
             return false;
+        }
+    },
+
+    async loadMessages(channelName: string, messageId: number | null = null, limit: number = 3, callback: (messages: Message[]) => void | null = () => {}) {
+        if (this.token) {
+            const socket = this.socketService.connect(`${channelName}`, this.token);
+            socket.emit('getMessages', limit, messageId);
+
+            socket.on('loadedMessages', (messageData: Message[]) => {
+                console.log('Messages received:', messageData);
+
+                this.channelMessages = messageData;
+                if (callback) callback(messageData);
+            });
         }
     },
 
@@ -250,13 +546,17 @@ export const useUserStore = defineStore('user', {
 
     async setSelectedChannel(channel: Channel | null) {
         this.selectedChannel = channel;
-        if(channel) {
-            await this.fetchMessages(channel.name);
+        if(!channel) {
+            this.channelMessages = [];
         }
     },
 
+    setContext(ctx: QVueGlobals | null) {
+      this.ctx = ctx
+    }
+
   },
   getters: {
-    
+
   },
 });
