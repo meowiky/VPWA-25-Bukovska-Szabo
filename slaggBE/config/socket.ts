@@ -7,7 +7,7 @@ import type { WsConfig } from '@ioc:Ruby184/Socket.IO/Ws'
 
 const wsConfig: WsConfig = {
   cors: {
-    origin: ['http://localhost:9000'],
+    origin: ['http://localhost:9000', "http://localhost:9200"],
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'],
     allowedHeaders : '*',
     credentials: true
