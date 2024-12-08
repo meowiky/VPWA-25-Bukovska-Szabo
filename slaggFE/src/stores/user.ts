@@ -430,9 +430,22 @@ export const useUserStore = defineStore('user', {
                     channelName: channel
                 }
             );
-            await this.loadChannels([channel]);
             const socket = this.socketService.connect(`${channel}`, this.token as string);
+            socket.on('channel', (addedChannel: Channel) => {
+                console.log('channel received:', addedChannel);
+                if (this.loggedUser?.channels) {
+                    this.loggedUser?.channels.push(addedChannel);
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
+            });
             socket.emit('addedMember', this.loggedUser?.nickName);
+            //aby sa stihol connectnut a potom zavolame loadChannels v ktorom sa uz nebude connectovat este raz, len pocuvat na emity
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await this.loadChannels([channel]);
         } catch (error) {
             console.error('join public channel error:', error);
         }
