@@ -17,6 +17,7 @@ export const useUserStore = defineStore('user', {
     publicChannels: [] as JoinableChannel[],
     rightDrawerOpen: true as boolean,
     channelMessages: null as Message[] | null,
+    queuedMessages: [] as Message[],
     socketService: socketService as SocketService,
     ctx: null as QVueGlobals | null
   }),
@@ -108,6 +109,10 @@ export const useUserStore = defineStore('user', {
             });
             socket.on('newMessage', (messageData: Message) => {
                 console.log('New message received:', messageData);
+                if (this.loggedUser && this.loggedUser.state == UserState.OFFLINE) {
+                  this.queuedMessages.push(messageData)
+                  return
+                }
                 this.notifyNewMessage(messageData, channelString);
                 if (this.selectedChannel && this.selectedChannel.name === channelString) {
                     if (this.channelMessages) {
@@ -168,7 +173,19 @@ export const useUserStore = defineStore('user', {
                         else {
                             targetChannel.users = [changedMember];
                         }
+                    }
 
+                    if (this.queuedMessages && this.queuedMessages.length > 0) {
+                        this.queuedMessages.forEach((message) => {
+                            this.notifyNewMessage(message, channelString);
+                            if (this.channelMessages) {
+                                this.channelMessages.push(message);
+                            }
+                            else {
+                                this.channelMessages = [message];
+                            }
+                        });
+                        this.queuedMessages = [];
                     }
                 }
             });
