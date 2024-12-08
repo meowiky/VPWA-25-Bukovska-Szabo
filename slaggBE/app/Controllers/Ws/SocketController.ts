@@ -198,4 +198,25 @@ export default class SocketController {
     }
   }
 
+
+  public async typing({ socket, params }: WsContextContract, memberNickName: string, message: string) {
+    const channel = await Channel.query().where('name', params.channelName).preload('users').first()
+    if (channel) {
+      const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
+      if (memberInChannel) {
+        socket.nsp.emit('typing', { nickname: memberNickName, message });
+      }
+    }
+  }
+
+  public async stopTyping({ socket, params }: WsContextContract, memberNickName: string) {
+    const channel = await Channel.query().where('name', params.channelName).preload('users').first()
+    if (channel) {
+      const memberInChannel = channel.users.find((user) => user.nickname === memberNickName);
+      if (memberInChannel) {
+        socket.nsp.emit('stopTyping', memberNickName);
+      }
+    }
+  }
+
 }

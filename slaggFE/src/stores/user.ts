@@ -19,7 +19,9 @@ export const useUserStore = defineStore('user', {
     channelMessages: null as Message[] | null,
     queuedMessages: [] as Message[],
     socketService: socketService as SocketService,
-    ctx: null as QVueGlobals | null
+    ctx: null as QVueGlobals | null,
+    typingMember: null as Member | null,
+    typingMessage: '' as string | number | null,
   }),
   actions: {
     async initializeAuth() {
@@ -92,6 +94,16 @@ export const useUserStore = defineStore('user', {
           notification.close()
         }
       }
+    },
+
+    async emitTyping(message: string | number | null) {
+      const socket = this.socketService.connect(`${this.selectedChannel?.name}`, this.token as string);
+      socket.emit('typing', this.loggedUser?.nickName, message);
+    },
+
+    async emitStopTyping() {
+      const socket = this.socketService.connect(`${this.selectedChannel?.name}`, this.token as string);
+      socket.emit('stopTyping', this.loggedUser?.nickName);
     },
 
     async loadChannels(channels: string[]) {
@@ -190,6 +202,38 @@ export const useUserStore = defineStore('user', {
                     }
                 }
             });
+
+          socket.on('typing', (data) => {
+
+            if (data.nickname === this.loggedUser?.nickName) {
+              return
+            }
+
+            this.getAllUsers();
+
+
+            const foundUser = this.usersAsMemberInterface.find(user => user.nickName == data.nickname);
+            this.typingMember = foundUser ?
+              { id: 0, email: '', nickName: foundUser.nickName, kickRequests: null, status: null } :
+              null;
+
+
+
+            // this.typingMember = this.usersAsMemberInterface.find(user => user.nickName == data.nickname) ?? null;
+            // this.typingMember = this.usersAsMemberInterface.find(user => user.nickName == data.nickname)
+
+
+            this.typingMessage = data.message
+
+            // console.trace(this.typingMember.nickName, this.typingMessage) // TODO:: Remove debug print
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          socket.on('stopTyping', (nickname) => {
+            this.typingMessage = '';
+            this.typingMember = null
+            // console.log(nickname, 'stopped typing') // TODO:: Remove debug print
+          });
         });
     },
     async login(email: string, password: string) {

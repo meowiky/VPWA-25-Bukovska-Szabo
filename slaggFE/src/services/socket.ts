@@ -42,6 +42,9 @@ export class SocketService {
       console.error('Socket connection timeout')
     })
 
+
+
+
     return this.sockets[channelName]
   }
 
@@ -66,6 +69,16 @@ export class SocketService {
     for (const channelName in this.sockets) {
       delete this.sockets[channelName];
     }
+  }
+
+  private handleTyping(data: { nickname: string, message: string }) {
+    console.log(`${data.nickname} is typing: ${data.message}`);
+    // CALL GUI TO CHANGE TYPING MESSAGE
+  }
+
+  private handleStopTyping(nickname: string) {
+    console.log(`${nickname} has stopped typing`);
+    // CALL GUI TO HIDE THE TYPING INDICATOR
   }
 
 }

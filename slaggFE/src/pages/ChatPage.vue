@@ -37,13 +37,6 @@
           </q-infinite-scroll>
         </div>
 
-        <div v-if="typingMember" class="typing-banner">
-          <q-banner type="info" dense>
-            <q-icon name="chat" />
-            {{ typingMember.nickName }} is typing: "{{ fakeTypingMessage }}"
-          </q-banner>
-        </div>
-
         <div class="bottom-section">
           <div v-if="displayedError" class="error-banner">
             <q-banner type="negative" dense>
@@ -53,8 +46,23 @@
           </div>
 
           <div class="message-input">
-            <q-input v-model="newMessage" label="Type a message..." outlined class="message-text-input" />
+            <q-input v-model="newMessage"
+                     label="Type a message..."
+                     outlined class="message-text-input"
+                     @update:model-value="onMessageInputChange"
+            />
             <q-btn @click="handleMessage" label="Send" color="primary" />
+          </div>
+
+          <div
+            v-if="typingMember"
+            class="typing-banner"
+            :key="typingCompositeKey"
+          >
+            <q-banner type="info" dense>
+              <q-icon name="chat" />
+              {{ typingMember.nickName }} is typing: "{{ typingMessage }}"
+            </q-banner>
           </div>
 
 <!--          <div class="debug-section">-->
@@ -74,7 +82,7 @@
 <script lang="ts">
 //import {AppVisibility} from 'quasar';
 import { useUserStore } from 'src/stores/user';
-import type { Message, Member } from 'src/stores/models'
+import type {Message} from 'src/stores/models'
 import { ref } from 'vue';
 import {QInfiniteScroll} from "quasar";
 
@@ -96,9 +104,8 @@ export default {
       itemsPerPage: 20,
       visibleMessages: [] as Message[],
       simulateIncomingMessages: false,
-      typingMember: null as Member | null,
-      fakeTypingMessage: 'This is the fake typing message.',
-      lastVisibleMessage: null as Message | null | undefined
+      lastVisibleMessage: null as Message | null | undefined,
+      typingTimeout: null as ReturnType<typeof setTimeout> | null
     };
   },
 
@@ -119,11 +126,26 @@ export default {
       return this.userStore.publicChannels;
     },
 
+    typingMessage() {
+      return this.userStore.typingMessage;
+    },
+    typingMember() {
+      return this.userStore.typingMember;
+    },
+
     messagesCompositeKey() {
       if (!this.loggedUser || !this.selectedChannel){
         return '';
       }
       return `${this.selectedChannel.name}-${this.visibleMessages.length}-${this.loggedUser.state}`;
+    },
+
+    typingCompositeKey() {
+      if (!this.typingMessage || !this.typingMember){
+        return '';
+      }
+
+      return `${this.typingMessage}-${this.typingMember?.nickName}`
     }
   },
 
@@ -151,6 +173,21 @@ export default {
   },
 
   methods: {
+
+    onMessageInputChange(newValue: string | number | null) {
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+      }
+
+      this.userStore.emitTyping(newValue)
+      // console.log('Emitting typing to others') // TODO:: Remove debug print
+      // this.typingMessage = newValue // DO NOT SET OWN TYPING MESSAGE WAIT FOR EMMITED ONE
+
+      this.typingTimeout = setTimeout(() => {
+        this.userStore.emitStopTyping();
+        this.typingTimeout = null;
+      }, 5000);
+    },
 
     async initMessages() {
       if (!this.selectedChannel) {
