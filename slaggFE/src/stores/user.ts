@@ -224,15 +224,12 @@ export const useUserStore = defineStore('user', {
 
 
             this.typingMessage = data.message
-
-            // console.trace(this.typingMember.nickName, this.typingMessage) // TODO:: Remove debug print
           });
 
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           socket.on('stopTyping', (nickname) => {
             this.typingMessage = '';
             this.typingMember = null
-            // console.log(nickname, 'stopped typing') // TODO:: Remove debug print
           });
         });
     },

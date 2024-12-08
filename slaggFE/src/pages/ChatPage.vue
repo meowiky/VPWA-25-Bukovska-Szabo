@@ -180,9 +180,6 @@ export default {
       }
 
       this.userStore.emitTyping(newValue)
-      // console.log('Emitting typing to others') // TODO:: Remove debug print
-      // this.typingMessage = newValue // DO NOT SET OWN TYPING MESSAGE WAIT FOR EMMITED ONE
-
       this.typingTimeout = setTimeout(() => {
         this.userStore.emitStopTyping();
         this.typingTimeout = null;
