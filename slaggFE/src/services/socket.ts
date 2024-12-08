@@ -15,6 +15,26 @@ export class SocketService {
       path: this.path
     });
   }
+  connectToUserSocket(userNickname: string, token: string) {
+    if (!this.sockets[userNickname]) {
+      this.sockets[userNickname] = this.manager.socket(`${this.path}/user/${userNickname}`, {
+        auth: {token: token}
+      })
+    }
+    if (!this.sockets[userNickname].connected) {
+      this.sockets[userNickname].connect();
+    }
+
+    return this.sockets[userNickname];
+  }
+
+  connectForInviteUser(userNickname: string, token: string) {
+    const socket = this.manager.socket(`${this.path}/user/${userNickname}`, {
+      auth: {token: token}
+    })
+    socket.connect();
+    return socket;
+  }
 
   connect(channelName: string, token: string) {
     if (!this.sockets[channelName]) {

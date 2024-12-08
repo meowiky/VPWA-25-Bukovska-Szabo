@@ -49,6 +49,7 @@ export const useUserStore = defineStore('user', {
                     await this.getAllUsers();
                     await this.getJoinablePublicChannels();
                     await this.loadChannels(channels);
+                    await this.listenToUserSocket();
                 }
             }
         } catch (error) {
@@ -108,6 +109,29 @@ export const useUserStore = defineStore('user', {
     async emitStopTyping() {
       const socket = this.socketService.connect(`${this.selectedChannel?.name}`, this.token as string);
       socket.emit('stopTyping', this.loggedUser?.nickName);
+    },
+
+    async listenToUserSocket() {
+        if (this.loggedUser && this.token) {
+            const socket =  this.socketService.connectToUserSocket(this.loggedUser.nickName, this.token);
+            socket.on('newChannel', (addedChannel: Channel) => {
+                console.log('added to new channel', addedChannel);
+                if (this.loggedUser?.channels) {
+                    const channelExists = this.loggedUser.channels.some(
+                        (channel) => channel.name === addedChannel.name
+                    );
+                    if (!channelExists) {
+                        this.loggedUser?.channels.push(addedChannel);
+                    }
+                }
+                else {
+                    if (this.loggedUser) {
+                        this.loggedUser.channels = [addedChannel];
+                    }
+                }
+            });
+        }
+        
     },
 
     async loadChannels(channels: string[]) {
@@ -423,6 +447,8 @@ export const useUserStore = defineStore('user', {
             );
             const socket = this.socketService.connect(`${channel}`, this.token as string);
             socket.emit('addedMember', user);
+            const socketUser = this.socketService.connectForInviteUser(user, this.token as string);
+            socketUser.emit('newChannel', channel);
         } catch (error) {
             console.error('add user to channel error:', error);
         }

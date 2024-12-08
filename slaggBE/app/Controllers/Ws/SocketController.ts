@@ -219,4 +219,48 @@ export default class SocketController {
     }
   }
 
+  public async inviteUser({ socket, params }: WsContextContract, channelName: string) {
+    const channel = await Channel.query().where('name', channelName).preload('users').preload('admin').first()
+    if (channel) {
+      const memberInChannel = channel.users.find((user) => user.nickname === params.userNickname);
+      if(memberInChannel) {
+        const kickRequests = await KickRequest.query()
+        .where('channelId', channel.id)
+        .preload('requester');
+
+        const kickRequestsByUser = kickRequests.reduce((acc, kickRequest) => {
+          if (!acc[kickRequest.targetId]) {
+            acc[kickRequest.targetId] = [];
+          }
+          acc[kickRequest.targetId].push({
+            requesterNickName: kickRequest.requester.nickname,
+          });
+          return acc;
+        }, {} as Record<number, { requesterNickName: string }[]>);
+
+        const formattedChannel = {
+          admin: {
+            id: channel.admin.id,
+            email: channel.admin.email,
+            nickName: channel.admin.nickname,
+            kickRequests: [],
+            status: channel.admin.state,
+          },
+          id: channel.id,
+          isPrivate: channel.isPrivate,
+          lastActive: channel.lastActive,
+          name: channel.name,
+          users: channel.users.map((user) => ({
+            id: user.id,
+            email: user.email,
+            nickName: user.nickname,
+            kickRequests: kickRequestsByUser[user.id] || [],
+            status: user.state,
+          })),
+        };
+        socket.nsp.emit('newChannel', formattedChannel);
+      }
+    }
+  }
+
 }

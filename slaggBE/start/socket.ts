@@ -11,3 +11,6 @@ Ws.namespace('/socket.io/:channelName')
   .on("reloadUser", "SocketController.reloadUser")
   .on("typing", "SocketController.typing")
   .on("stopTyping", "SocketController.stopTyping")
+
+  Ws.namespace('/socket.io/user/:userNickname')
+  .on("newChannel", "SocketController.inviteUser")
