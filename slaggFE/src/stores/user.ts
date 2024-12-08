@@ -4,7 +4,7 @@ import { UserState } from './models';
 import { api } from 'src/boot/axios';
 import socketService from 'src/services/socket';
 import { SocketService } from 'src/services/socket';
-import { QVueGlobals } from "quasar";
+import {AppVisibility, QVueGlobals} from "quasar";
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -63,6 +63,7 @@ export const useUserStore = defineStore('user', {
         (this.loggedUser && this.loggedUser.nickName == message.sender) ||
         (this.loggedUser && this.loggedUser.state == UserState.DND) ||
         (this.loggedUser && this.mentionsOnly && !message.content.includes(`@${this.loggedUser.nickName}`))
+        || !AppVisibility.appVisible
       ) { return }
 
       let notificationMessage = `${message.sender}: ${message.content}`
