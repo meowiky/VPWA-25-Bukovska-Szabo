@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import type { Channel, JoinableChannel, Member, Message, OtherUser, User, UserState } from './models';
+import type { Channel, JoinableChannel, Member, Message, OtherUser, User } from './models';
+import { UserState } from './models';
 import { api } from 'src/boot/axios';
 import socketService from 'src/services/socket';
 import { SocketService } from 'src/services/socket';
@@ -58,7 +59,9 @@ export const useUserStore = defineStore('user', {
     async notifyNewMessage(message: Message, channelName: string | null = null) {
       if (
         !this.ctx ||
-        (this.loggedUser && this.loggedUser.nickName == message.sender)
+        (this.loggedUser && this.loggedUser.nickName == message.sender) ||
+        (this.loggedUser && this.loggedUser.state == UserState.DND) ||
+        (this.loggedUser && this.mentionsOnly && !message.content.includes(`@${this.loggedUser.nickName}`))
       ) { return }
 
       let notificationMessage = `${message.sender}: ${message.content}`

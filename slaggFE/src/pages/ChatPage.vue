@@ -172,8 +172,6 @@ export default {
         (messages: Message[]) => {
           this.visibleMessages = messages
           this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
-
-          console.trace(this.lastVisibleMessage)
         }
       )
 
@@ -204,10 +202,13 @@ export default {
           this.lastVisibleMessage?.id ?? null,
           this.itemsPerPage,
           (messages: Message[]) => {
+            if (messages && messages.length === 0) {
+              this.infiniteScroll?.stop();
+              this.loading = false;
+              return;
+            }
             this.visibleMessages = [...messages, ...currentMessages];
             this.lastVisibleMessage = this.visibleMessages.length > 0 ? this.visibleMessages[0] : null;
-
-            console.trace(this.lastVisibleMessage)
           }
         );
       } catch (error) {
@@ -290,11 +291,6 @@ export default {
       if (!this.newMessage || this.newMessage.length === 0) return;
       if (this.selectedChannel) {
         await this.userStore.sendNewMessage(this.selectedChannel.name, this.newMessage);
-        if (this.userStore.channelMessages) {
-          // TODO REWRITE THIS TO TAKE THE NEW MESSAGE AND PUSH IT AT 0th INDEX
-          this.visibleMessages = [...this.userStore.channelMessages.slice(-this.itemsPerPage)];
-        }
-        // TODO:: Scroll down to new message?
         this.newMessage = '';
       }
     },
